@@ -23,13 +23,16 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     AND (:status IS NULL OR p.status = :status)
     AND (:minPrice IS NULL OR p.productPrice >= :minPrice)
     AND (:maxPrice IS NULL OR p.productPrice <= :maxPrice)
+    AND (:categoryId IS NULL OR p.category.id = :categoryId)
 """)
     Page<Product> searchProducts(
             @Param("keyword") String keyword,
             @Param("status") String status,
             @Param("minPrice") BigDecimal minPrice,
             @Param("maxPrice") BigDecimal maxPrice,
+            @Param("categoryId") Long categoryId,
             Pageable pageable
     );
+
 
 }

@@ -35,10 +35,10 @@ public class ProductServiceImpl implements ProductService {
             String status,
             BigDecimal minPrice,
             BigDecimal maxPrice,
-            Pageable pageable
+            Pageable pageable,
+            Long categoryId
     ) {
-        Page<Product> products = productRepository.searchProducts(keyword, status, minPrice, maxPrice, pageable);
-
+        Page<Product> products = productRepository.searchProducts(keyword, status, minPrice, maxPrice, categoryId, pageable);
         return products.map(this::mapToDto);
     }
 

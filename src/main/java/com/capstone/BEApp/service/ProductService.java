@@ -14,7 +14,8 @@ public interface ProductService {
             String status,
             BigDecimal minPrice,
             BigDecimal maxPrice,
-            Pageable pageable
+            Pageable pageable,
+            Long categoryId
     );
 
     ProductDto createProduct(CreateProductDto dto) ;
