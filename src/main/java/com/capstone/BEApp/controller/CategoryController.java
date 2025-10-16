@@ -8,6 +8,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
@@ -25,10 +27,10 @@ public class CategoryController {
         }
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ResponseDto<CategoryDto>> update(@PathVariable Long id, @RequestBody CategoryDto dto) {
+    @PutMapping("update")
+    public ResponseEntity<ResponseDto<CategoryDto>> update(@RequestBody CategoryDto dto) {
         try {
-            CategoryDto updated = categoryService.update(id, dto);
+            CategoryDto updated = categoryService.update( dto);
             return ResponseEntity.ok(ResponseDto.success(updated, "Cập nhật danh mục thành công"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseDto.fail("Lỗi khi cập nhật danh mục: " + e.getMessage()));
@@ -45,17 +47,17 @@ public class CategoryController {
         }
     }
 
-    @GetMapping
-    public ResponseEntity<ResponseDto<Page<CategoryDto>>> search(
+    @GetMapping("search")
+    public ResponseDto<List<CategoryDto>> search(
             @RequestParam(required = false, defaultValue = "") String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         try {
             Page<CategoryDto> result = categoryService.search(keyword, page, size);
-            return ResponseEntity.ok(ResponseDto.successWithPagination(result, "Lấy danh sách danh mục thành công", result));
+            return ResponseDto.successWithPagination(result.getContent(), "Lấy danh sách danh mục thành công", result);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseDto.fail("Lỗi khi tìm kiếm danh mục: " + e.getMessage()));
+            return ResponseDto.fail("Lỗi khi tìm kiếm danh mục: " + e.getMessage());
         }
     }
 }

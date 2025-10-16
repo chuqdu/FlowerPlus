@@ -1,7 +1,9 @@
 package com.capstone.BEApp.controller;
 
 import com.capstone.BEApp.dto.common.ResponseDto;
+import com.capstone.BEApp.dto.flower.CreateFlowerDto;
 import com.capstone.BEApp.dto.flower.FlowerDto;
+import com.capstone.BEApp.dto.flower.UpdateFlowerDto;
 import com.capstone.BEApp.service.FlowerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,13 +17,13 @@ public class FlowerController {
     private final FlowerService flowerService;
 
     @PostMapping
-    public ResponseDto<FlowerDto> create(@RequestBody FlowerDto dto) {
+    public ResponseDto<FlowerDto> create(@RequestBody CreateFlowerDto dto) {
         return ResponseDto.success(flowerService.create(dto), "Thêm hoa thành công");
     }
 
     @PutMapping("/{id}")
-    public ResponseDto<FlowerDto> update(@PathVariable Long id, @RequestBody FlowerDto dto) {
-        return ResponseDto.success(flowerService.update(id, dto), "Cập nhật hoa thành công");
+    public ResponseDto<FlowerDto> update( @RequestBody UpdateFlowerDto dto) {
+        return ResponseDto.success(flowerService.update(dto), "Cập nhật hoa thành công");
     }
 
     @DeleteMapping("/{id}")

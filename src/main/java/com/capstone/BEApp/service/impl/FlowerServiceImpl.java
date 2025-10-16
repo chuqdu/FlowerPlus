@@ -1,6 +1,8 @@
 package com.capstone.BEApp.service.impl;
 
+import com.capstone.BEApp.dto.flower.CreateFlowerDto;
 import com.capstone.BEApp.dto.flower.FlowerDto;
+import com.capstone.BEApp.dto.flower.UpdateFlowerDto;
 import com.capstone.BEApp.entity.Category;
 import com.capstone.BEApp.entity.Flower;
 import com.capstone.BEApp.repository.CategoryRepository;
@@ -20,13 +22,13 @@ public class FlowerServiceImpl implements FlowerService {
     private final CategoryRepository categoryRepository;
 
     @Override
-    public FlowerDto create(FlowerDto dto) {
+    public FlowerDto create(CreateFlowerDto dto) {
         Flower flower = new Flower();
         flower.setName(dto.getName());
         flower.setDescription(dto.getDescription());
         flower.setPrice(dto.getPrice());
         flower.setQuality(dto.getQuality());
-        flower.setStatus(dto.getStatus());
+        flower.setStatus("ACTIVE");
         flower.setSeason(dto.getSeason());
 
         if (dto.getCategoryId() != null) {
@@ -40,8 +42,8 @@ public class FlowerServiceImpl implements FlowerService {
     }
 
     @Override
-    public FlowerDto update(Long id, FlowerDto dto) {
-        Flower flower = flowerRepository.findById(id)
+    public FlowerDto update(UpdateFlowerDto dto) {
+        Flower flower = flowerRepository.findById(dto.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy hoa"));
 
         flower.setName(dto.getName());

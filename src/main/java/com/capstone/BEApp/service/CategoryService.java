@@ -6,7 +6,7 @@ import org.springframework.data.domain.Pageable;
 
 public interface CategoryService {
     CategoryDto create(CategoryDto dto);
-    CategoryDto update(Long id, CategoryDto dto);
+    CategoryDto update(CategoryDto dto);
     CategoryDto getById(Long id);
     Page<CategoryDto> search(String keyword, int page, int size);
 }

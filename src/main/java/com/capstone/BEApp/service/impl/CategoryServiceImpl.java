@@ -32,8 +32,8 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public CategoryDto update(Long id, CategoryDto dto) {
-        Category category = categoryRepository.findById(id)
+    public CategoryDto update( CategoryDto dto) {
+        Category category = categoryRepository.findById(dto.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy danh mục"));
 
         category.setName(dto.getName());
