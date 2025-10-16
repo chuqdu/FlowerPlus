@@ -1,0 +1,47 @@
+package com.capstone.BEApp.controller;
+
+import com.capstone.BEApp.dto.common.ResponseDto;
+import com.capstone.BEApp.dto.flower.FlowerDto;
+import com.capstone.BEApp.service.FlowerService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/flowers")
+@RequiredArgsConstructor
+public class FlowerController {
+
+    private final FlowerService flowerService;
+
+    @PostMapping
+    public ResponseDto<FlowerDto> create(@RequestBody FlowerDto dto) {
+        return ResponseDto.success(flowerService.create(dto), "Thêm hoa thành công");
+    }
+
+    @PutMapping("/{id}")
+    public ResponseDto<FlowerDto> update(@PathVariable Long id, @RequestBody FlowerDto dto) {
+        return ResponseDto.success(flowerService.update(id, dto), "Cập nhật hoa thành công");
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseDto<Void> delete(@PathVariable Long id) {
+        flowerService.delete(id);
+        return ResponseDto.success(null, "Xóa hoa thành công");
+    }
+
+    @GetMapping("/{id}")
+    public ResponseDto<FlowerDto> getById(@PathVariable Long id) {
+        return ResponseDto.success(flowerService.getById(id), "Lấy thông tin hoa thành công");
+    }
+
+    @GetMapping
+    public ResponseDto<?> search(
+            @RequestParam(defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<FlowerDto> result = flowerService.search(keyword, page, size);
+        return ResponseDto.successWithPagination(result.getContent(), "Lấy danh sách hoa thành công", result);
+    }
+}
