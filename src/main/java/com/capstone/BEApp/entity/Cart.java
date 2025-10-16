@@ -2,6 +2,8 @@ package com.capstone.BEApp.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -11,8 +13,8 @@ public class Cart {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    private Double totalPrice;
+    @Column(precision = 18, scale = 2)
+    private BigDecimal totalPrice;
     private LocalDateTime createdDate = LocalDateTime.now();
 
     @ManyToOne

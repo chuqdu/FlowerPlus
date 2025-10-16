@@ -2,6 +2,8 @@ package com.capstone.BEApp.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -15,7 +17,8 @@ public class Flower {
     private String name;
     private String quality;
     private String description;
-    private Double price;
+    @Column(precision = 18, scale = 2)
+    private BigDecimal price;
     private String status;
     private String season;
     private LocalDateTime createdDate = LocalDateTime.now();

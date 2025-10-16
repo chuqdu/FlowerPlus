@@ -3,6 +3,8 @@ package com.capstone.BEApp.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class CartItem {
@@ -11,7 +13,8 @@ public class CartItem {
     private Long id;
 
     private String productName;
-    private Double productPrice;
+    @Column(precision = 18, scale = 2)
+    private BigDecimal productPrice;
     private Integer quantity;
 
     @ManyToOne

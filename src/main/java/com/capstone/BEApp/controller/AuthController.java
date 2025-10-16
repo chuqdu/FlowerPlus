@@ -5,7 +5,6 @@ import com.capstone.BEApp.dto.auth.LoginRequest;
 import com.capstone.BEApp.dto.auth.LoginResponseDto;
 import com.capstone.BEApp.dto.auth.RegisterRequest;
 import com.capstone.BEApp.dto.common.ResponseDto;
-import com.capstone.BEApp.entity.Account;
 import com.capstone.BEApp.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
