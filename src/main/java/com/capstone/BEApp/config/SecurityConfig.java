@@ -18,8 +18,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableWebSecurity  // ✅ THIẾU DÒNG NÀY NÊN @PermitAll KHÔNG KÍCH HOẠT
-@EnableMethodSecurity(jsr250Enabled = true, prePostEnabled = true)  // ✅ Bật hỗ trợ @PermitAll, @RolesAllowed
+@EnableWebSecurity
+@EnableMethodSecurity(jsr250Enabled = true, prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -38,6 +38,7 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/v3/api-docs/**",
                                 "/api/products/search",
+                                "/api/auth/login",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
@@ -53,7 +54,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // ✅ Bổ sung bean AuthenticationManager (nếu bạn dùng login service)
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();

@@ -34,7 +34,7 @@ public class ProductController {
         );
 
         return ResponseDto.successWithPagination(
-                products.getContent(),  // ✅ Chỉ lấy content (List)
+                products.getContent(),
                 "Products retrieved successfully",
                 products
         );

@@ -31,7 +31,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 🧠 Lấy token từ header
+        // Lấy token từ header
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (StringUtils.hasText(header)) {
             String token = header.startsWith("Bearer ") ? header.substring(7) : header;
@@ -40,7 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (jwtTokenUtil.validateToken(token)) {
                     String email = jwtTokenUtil.extractEmail(token);
 
-                    // 🟢 Fetch Account với role luôn để tránh LazyInitializationException
+                    // Fetch Account với role luôn để tránh LazyInitializationException
                     Account account = accountRepository.findWithRoleByEmail(email)
                             .orElse(null);
 
@@ -61,7 +61,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     }
                 }
             } catch (JwtException ex) {
-                // ❌ Token không hợp lệ -> không set authentication
+                // Token không hợp lệ -> không set authentication
                 System.out.println("JWT invalid: " + ex.getMessage());
             }
         }
