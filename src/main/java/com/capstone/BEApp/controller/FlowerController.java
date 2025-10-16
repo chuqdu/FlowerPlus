@@ -40,10 +40,10 @@ public class FlowerController {
     @GetMapping
     public ResponseDto<?> search(
             @RequestParam(defaultValue = "") String keyword,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Page<FlowerDto> result = flowerService.search(keyword, page, size);
+        Page<FlowerDto> result = flowerService.search(keyword, page - 1, size);
         return ResponseDto.successWithPagination(result.getContent(), "Lấy danh sách hoa thành công", result);
     }
 }

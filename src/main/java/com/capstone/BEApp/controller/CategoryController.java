@@ -50,11 +50,11 @@ public class CategoryController {
     @GetMapping("search")
     public ResponseDto<List<CategoryDto>> search(
             @RequestParam(required = false, defaultValue = "") String keyword,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         try {
-            Page<CategoryDto> result = categoryService.search(keyword, page, size);
+            Page<CategoryDto> result = categoryService.search(keyword, page - 1, size);
             return ResponseDto.successWithPagination(result.getContent(), "Lấy danh sách danh mục thành công", result);
         } catch (Exception e) {
             return ResponseDto.fail("Lỗi khi tìm kiếm danh mục: " + e.getMessage());

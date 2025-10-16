@@ -7,6 +7,7 @@ import com.capstone.BEApp.dto.auth.RegisterRequest;
 import com.capstone.BEApp.dto.common.ResponseDto;
 import com.capstone.BEApp.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.annotation.security.PermitAll;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -19,12 +20,14 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
+    @PermitAll
     @Operation(summary = "Login and get JWT token")
     public ResponseDto<LoginResponseDto> login(@RequestBody LoginRequest request) {
         return authService.login(request);
     }
 
     @PostMapping("/register")
+    @PermitAll
     @Operation(summary = "Tạo tài khoản user")
     public ResponseDto<String> register(@RequestBody RegisterRequest request) {
         return authService.register(request);

@@ -28,11 +28,11 @@ public class ProductController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         Page<ProductDto> products = productService.searchProducts(
-                keyword, status, minPrice, maxPrice, PageRequest.of(page, size)
+                keyword, status, minPrice, maxPrice, PageRequest.of(page - 1, size)
         );
 
         return ResponseDto.successWithPagination(
