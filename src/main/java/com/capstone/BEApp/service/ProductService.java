@@ -1,5 +1,6 @@
 package com.capstone.BEApp.service;
 
+import com.capstone.BEApp.dto.product.CreateProductDto;
 import com.capstone.BEApp.dto.product.ProductDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,5 +16,7 @@ public interface ProductService {
             BigDecimal maxPrice,
             Pageable pageable
     );
+
+    ProductDto createProduct(CreateProductDto dto) ;
 
 }
