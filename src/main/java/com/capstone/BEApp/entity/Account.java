@@ -15,12 +15,15 @@ public class Account {
     private Long id;
     @Column(name = "name", columnDefinition = "NVARCHAR(255)")
     private String name;
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String avatar;
     private String email;
     private String phone;
     private Integer age;
     private String gender;
     private String password;
+    @Column(name = "name", columnDefinition = "NVARCHAR(255)")
     private String address;
     private LocalDateTime createdDate = LocalDateTime.now();
 

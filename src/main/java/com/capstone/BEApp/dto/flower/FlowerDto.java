@@ -3,6 +3,7 @@ package com.capstone.BEApp.dto.flower;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -11,12 +12,11 @@ import java.time.LocalDateTime;
 public class FlowerDto {
     private Long id;
     private String name;
-    private String quality;
     private String description;
     private BigDecimal price;
+    private String quality;
     private String status;
     private String season;
     private LocalDateTime createdDate;
-    private Long categoryId;
-    private String categoryName;
+    private List<String> imageUrls;
 }
