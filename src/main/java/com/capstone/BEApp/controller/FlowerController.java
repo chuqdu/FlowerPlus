@@ -26,12 +26,6 @@ public class FlowerController {
         return ResponseDto.success(flowerService.update(dto), "Cập nhật hoa thành công");
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseDto<Void> delete(@PathVariable Long id) {
-        flowerService.delete(id);
-        return ResponseDto.success(null, "Xóa hoa thành công");
-    }
-
     @GetMapping("/{id}")
     public ResponseDto<FlowerDto> getById(@PathVariable Long id) {
         return ResponseDto.success(flowerService.getById(id), "Lấy thông tin hoa thành công");

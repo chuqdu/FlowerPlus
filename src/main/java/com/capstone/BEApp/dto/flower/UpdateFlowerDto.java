@@ -20,5 +20,4 @@ public class UpdateFlowerDto {
     private BigDecimal price;
     private String status;
     private String season;
-    private Long categoryId;
 }

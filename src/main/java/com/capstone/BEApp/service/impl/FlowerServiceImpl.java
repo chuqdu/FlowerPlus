@@ -30,13 +30,6 @@ public class FlowerServiceImpl implements FlowerService {
         flower.setQuality(dto.getQuality());
         flower.setStatus("ACTIVE");
         flower.setSeason(dto.getSeason());
-
-        if (dto.getCategoryId() != null) {
-            Category category = categoryRepository.findById(dto.getCategoryId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không tìm thấy danh mục"));
-            flower.setCategory(category);
-        }
-
         Flower saved = flowerRepository.save(flower);
         return toDto(saved);
     }
@@ -52,25 +45,8 @@ public class FlowerServiceImpl implements FlowerService {
         flower.setQuality(dto.getQuality());
         flower.setStatus(dto.getStatus());
         flower.setSeason(dto.getSeason());
-
-        if (dto.getCategoryId() != null) {
-            Category category = categoryRepository.findById(dto.getCategoryId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không tìm thấy danh mục"));
-            flower.setCategory(category);
-        } else {
-            flower.setCategory(null);
-        }
-
         Flower saved = flowerRepository.save(flower);
         return toDto(saved);
-    }
-
-    @Override
-    public void delete(Long id) {
-        if (!flowerRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy hoa để xóa");
-        }
-        flowerRepository.deleteById(id);
     }
 
     @Override
@@ -97,8 +73,6 @@ public class FlowerServiceImpl implements FlowerService {
                 .status(flower.getStatus())
                 .season(flower.getSeason())
                 .createdDate(flower.getCreatedDate())
-                .categoryId(flower.getCategory() != null ? flower.getCategory().getId() : null)
-                .categoryName(flower.getCategory() != null ? flower.getCategory().getName() : null)
                 .build();
     }
 }

@@ -38,9 +38,17 @@ public class ProductServiceImpl implements ProductService {
             Pageable pageable,
             Long categoryId
     ) {
-        Page<Product> products = productRepository.searchProducts(keyword, status, minPrice, maxPrice, categoryId, pageable);
+        Page<Product> products = productRepository.searchProducts(
+                keyword,
+                status,
+                minPrice,
+                maxPrice,
+                categoryId,
+                pageable
+        );
         return products.map(this::mapToDto);
     }
+
 
     @Override
     public ProductDto createProduct(CreateProductDto dto) {

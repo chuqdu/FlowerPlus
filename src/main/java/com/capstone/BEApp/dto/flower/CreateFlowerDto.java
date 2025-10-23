@@ -19,5 +19,4 @@ public class CreateFlowerDto {
     private String description;
     private BigDecimal price;
     private String season;
-    private Long categoryId;
 }

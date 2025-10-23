@@ -38,10 +38,11 @@ public class ProductController {
 
         return ResponseDto.successWithPagination(
                 products.getContent(),
-                "Products retrieved successfully",
+                "Lấy Giỏ Hoa Thành Công",
                 products
         );
     }
+
 
     @PostMapping
     public ResponseEntity<ProductDto> createProduct(@RequestBody CreateProductDto dto) {

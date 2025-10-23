@@ -30,9 +30,4 @@ public class Flower {
 
     @OneToMany(mappedBy = "flower", cascade = CascadeType.ALL)
     private List<Image> images;
-
-    @ManyToOne
-    @JoinColumn(name = "category_id")
-    private Category category;
-
 }
