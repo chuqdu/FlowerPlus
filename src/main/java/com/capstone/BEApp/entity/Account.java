@@ -23,7 +23,7 @@ public class Account {
     private Integer age;
     private String gender;
     private String password;
-    @Column(name = "name", columnDefinition = "NVARCHAR(255)")
+    @Column(name = "address", columnDefinition = "NVARCHAR(255)")
     private String address;
     private LocalDateTime createdDate = LocalDateTime.now();
 
