@@ -16,13 +16,9 @@ public class CreateProductDto {
     private String description;
     private String status;
     private BigDecimal productPrice;
-    private Long categoryId;
+    private List<Long> categoryId;
 
     private List<Long> flowerIds;
     private List<Long> itemIds;
     private List<String> imageUrls;
-    private String mainImageUrl;
-
-    private List<String> flowerNames;
-    private List<String> itemNames;
 }
