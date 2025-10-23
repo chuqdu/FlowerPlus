@@ -12,19 +12,17 @@ import java.math.BigDecimal;
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("""
-    SELECT DISTINCT p FROM Product p
-    LEFT JOIN p.productFlowers pf
-    LEFT JOIN pf.flower f
-    LEFT JOIN p.productItems pi
-    LEFT JOIN pi.items i
-    WHERE (:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
-        OR LOWER(f.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
-        OR LOWER(i.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
-    AND (:status IS NULL OR p.status = :status)
-    AND (:minPrice IS NULL OR p.productPrice >= :minPrice)
-    AND (:maxPrice IS NULL OR p.productPrice <= :maxPrice)
-    AND (:categoryId IS NULL OR p.category.id = :categoryId)
-""")
+        SELECT DISTINCT p FROM Product p
+        LEFT JOIN p.productCategories pc
+        LEFT JOIN pc.category c
+        WHERE (:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%')))
+          AND (:status IS NULL OR p.status = :status)
+          AND (:minPrice IS NULL OR p.productPrice >= :minPrice)
+          AND (:maxPrice IS NULL OR p.productPrice <= :maxPrice)
+          AND (:categoryId IS NULL OR c.id = :categoryId)
+        ORDER BY p.createdDate DESC
+    """)
     Page<Product> searchProducts(
             @Param("keyword") String keyword,
             @Param("status") String status,
@@ -33,6 +31,4 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             @Param("categoryId") Long categoryId,
             Pageable pageable
     );
-
-
 }

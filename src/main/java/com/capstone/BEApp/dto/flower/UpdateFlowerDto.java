@@ -7,18 +7,19 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UpdateFlowerDto {
+public class UpdateFlowerDto  {
     private Long id;
     private String name;
-    private String quality;
     private String description;
     private BigDecimal price;
-    private String status;
+    private String quality;
     private String season;
-    private Long categoryId;
+    private String status;
+    private List<String> imageUrls;
 }

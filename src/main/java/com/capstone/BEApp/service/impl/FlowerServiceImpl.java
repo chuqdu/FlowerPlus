@@ -3,8 +3,8 @@ package com.capstone.BEApp.service.impl;
 import com.capstone.BEApp.dto.flower.CreateFlowerDto;
 import com.capstone.BEApp.dto.flower.FlowerDto;
 import com.capstone.BEApp.dto.flower.UpdateFlowerDto;
-import com.capstone.BEApp.entity.Category;
 import com.capstone.BEApp.entity.Flower;
+import com.capstone.BEApp.entity.Image;
 import com.capstone.BEApp.repository.CategoryRepository;
 import com.capstone.BEApp.repository.FlowerRepository;
 import com.capstone.BEApp.service.FlowerService;
@@ -13,6 +13,9 @@ import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,15 +34,17 @@ public class FlowerServiceImpl implements FlowerService {
         flower.setStatus("ACTIVE");
         flower.setSeason(dto.getSeason());
 
-        if (dto.getCategoryId() != null) {
-            Category category = categoryRepository.findById(dto.getCategoryId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không tìm thấy danh mục"));
-            flower.setCategory(category);
+        if (dto.getImageUrls() != null) {
+            List<Image> images = dto.getImageUrls().stream()
+                    .map(url -> Image.builder().url(url).flower(flower).build())
+                    .collect(Collectors.toList());
+            flower.setImages(images);
         }
 
         Flower saved = flowerRepository.save(flower);
         return toDto(saved);
     }
+
 
     @Override
     public FlowerDto update(UpdateFlowerDto dto) {
@@ -53,25 +58,18 @@ public class FlowerServiceImpl implements FlowerService {
         flower.setStatus(dto.getStatus());
         flower.setSeason(dto.getSeason());
 
-        if (dto.getCategoryId() != null) {
-            Category category = categoryRepository.findById(dto.getCategoryId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không tìm thấy danh mục"));
-            flower.setCategory(category);
-        } else {
-            flower.setCategory(null);
+        if (dto.getImageUrls() != null) {
+            flower.getImages().clear();
+            List<Image> newImages = dto.getImageUrls().stream()
+                    .map(url -> Image.builder().url(url).flower(flower).build())
+                    .collect(Collectors.toList());
+            flower.setImages(newImages);
         }
 
         Flower saved = flowerRepository.save(flower);
         return toDto(saved);
     }
 
-    @Override
-    public void delete(Long id) {
-        if (!flowerRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy hoa để xóa");
-        }
-        flowerRepository.deleteById(id);
-    }
 
     @Override
     public FlowerDto getById(Long id) {
@@ -88,6 +86,12 @@ public class FlowerServiceImpl implements FlowerService {
     }
 
     private FlowerDto toDto(Flower flower) {
+        List<String> imageUrls = flower.getImages() != null
+                ? flower.getImages().stream()
+                .map(Image::getUrl)
+                .collect(Collectors.toList())
+                : null;
+
         return FlowerDto.builder()
                 .id(flower.getId())
                 .name(flower.getName())
@@ -97,8 +101,7 @@ public class FlowerServiceImpl implements FlowerService {
                 .status(flower.getStatus())
                 .season(flower.getSeason())
                 .createdDate(flower.getCreatedDate())
-                .categoryId(flower.getCategory() != null ? flower.getCategory().getId() : null)
-                .categoryName(flower.getCategory() != null ? flower.getCategory().getName() : null)
+                .imageUrls(imageUrls)
                 .build();
     }
 }

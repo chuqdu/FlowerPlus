@@ -8,6 +8,7 @@ import jakarta.annotation.security.PermitAll;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,14 +39,19 @@ public class ProductController {
 
         return ResponseDto.successWithPagination(
                 products.getContent(),
-                "Products retrieved successfully",
+                "Lấy Giỏ Hoa Thành Công",
                 products
         );
     }
 
+
     @PostMapping
-    public ResponseEntity<ProductDto> createProduct(@RequestBody CreateProductDto dto) {
-        ProductDto created = productService.createProduct(dto);
-        return ResponseEntity.ok(created);
+    public ResponseDto createProduct(@RequestBody CreateProductDto dto) {
+        try {
+            ProductDto created = productService.createProduct(dto);
+            return ResponseDto.success(created,"Tạo sản phẩm thành công");
+        } catch (Exception e) {
+            return ResponseDto.fail("Lỗi khi thêm sản phẩm: " + e.getMessage());
+        }
     }
 }

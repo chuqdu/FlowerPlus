@@ -18,23 +18,30 @@ public class FlowerController {
 
     @PostMapping
     public ResponseDto<FlowerDto> create(@RequestBody CreateFlowerDto dto) {
-        return ResponseDto.success(flowerService.create(dto), "Thêm hoa thành công");
+        try {
+            return ResponseDto.success(flowerService.create(dto), "Thêm hoa thành công");
+        } catch (Exception e) {
+            return ResponseDto.fail("Lỗi khi thêm hoa: " + e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseDto<FlowerDto> update( @RequestBody UpdateFlowerDto dto) {
-        return ResponseDto.success(flowerService.update(dto), "Cập nhật hoa thành công");
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseDto<Void> delete(@PathVariable Long id) {
-        flowerService.delete(id);
-        return ResponseDto.success(null, "Xóa hoa thành công");
+    public ResponseDto<FlowerDto> update(@PathVariable Long id, @RequestBody UpdateFlowerDto dto) {
+        try {
+            dto.setId(id); // Giả sử UpdateFlowerDto cần set id
+            return ResponseDto.success(flowerService.update(dto), "Cập nhật hoa thành công");
+        } catch (Exception e) {
+            return ResponseDto.fail("Lỗi khi cập nhật hoa: " + e.getMessage());
+        }
     }
 
     @GetMapping("/{id}")
     public ResponseDto<FlowerDto> getById(@PathVariable Long id) {
-        return ResponseDto.success(flowerService.getById(id), "Lấy thông tin hoa thành công");
+        try {
+            return ResponseDto.success(flowerService.getById(id), "Lấy thông tin hoa thành công");
+        } catch (Exception e) {
+            return ResponseDto.fail("Lỗi khi lấy thông tin hoa: " + e.getMessage());
+        }
     }
 
     @GetMapping
@@ -43,7 +50,11 @@ public class FlowerController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Page<FlowerDto> result = flowerService.search(keyword, page - 1, size);
-        return ResponseDto.successWithPagination(result.getContent(), "Lấy danh sách hoa thành công", result);
+        try {
+            Page<FlowerDto> result = flowerService.search(keyword, page - 1, size);
+            return ResponseDto.successWithPagination(result.getContent(), "Lấy danh sách hoa thành công", result);
+        } catch (Exception e) {
+            return ResponseDto.fail("Lỗi khi tìm kiếm hoa: " + e.getMessage());
+        }
     }
 }
