@@ -21,21 +21,35 @@ public class AuthController {
 
     @PostMapping("/login")
     @PermitAll
-    @Operation(summary = "Login and get JWT token")
+    @Operation(summary = "Login và lấy JWT token")
     public ResponseDto<LoginResponseDto> login(@RequestBody LoginRequest request) {
-        return authService.login(request);
+        try {
+            return authService.login(request);
+        } catch (Exception e) {
+            return ResponseDto.fail("Lỗi đăng nhập: " + e.getMessage());
+        }
     }
 
     @PostMapping("/register")
     @PermitAll
     @Operation(summary = "Tạo tài khoản user")
     public ResponseDto<String> register(@RequestBody RegisterRequest request) {
-        return authService.register(request);
+        try {
+            return authService.register(request);
+        } catch (Exception e) {
+            return ResponseDto.fail("Lỗi khi đăng ký: " + e.getMessage());
+        }
     }
 
     @GetMapping("/me")
-    public ResponseDto<AccountDto> me(Authentication authentication,
-                                      @RequestParam(defaultValue = "false") boolean includeRole) {
-        return authService.getMe(authentication, includeRole);
+    @Operation(summary = "Lấy thông tin người dùng hiện tại")
+    public ResponseDto<AccountDto> me(
+            Authentication authentication,
+            @RequestParam(defaultValue = "false") boolean includeRole) {
+        try {
+            return authService.getMe(authentication, includeRole);
+        } catch (Exception e) {
+            return ResponseDto.fail("Lỗi khi lấy thông tin người dùng: " + e.getMessage());
+        }
     }
 }
