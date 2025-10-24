@@ -18,9 +18,11 @@ public class CartController {
             @PathVariable Long accountId,
             @RequestBody ReplaceCartRequestDto request
     ) {
-        return ResponseDto.success(
-                cartService.replaceCart(accountId, request),
-                "Đã cập nhật giỏ hàng thành công"
-        );
+        try {
+            CartResponseDto updatedCart = cartService.replaceCart(accountId, request);
+            return ResponseDto.success(updatedCart, "Đã cập nhật giỏ hàng thành công");
+        } catch (Exception e) {
+            return ResponseDto.fail("Lỗi khi cập nhật giỏ hàng: " + e.getMessage());
+        }
     }
 }

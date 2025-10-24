@@ -15,7 +15,12 @@ public class UploadController {
 
     @PostMapping("/image")
     public ResponseDto<String> uploadImage(@RequestParam("file") MultipartFile file) {
-        String imageUrl = imageUploadService.uploadImage(file);
-        return ResponseDto.success(imageUrl, "Upload ảnh thành công");
+        try {
+            String imageUrl = imageUploadService.uploadImage(file);
+            return ResponseDto.success(imageUrl, "Upload ảnh thành công");
+        } catch (Exception e) {
+            return ResponseDto.fail("Lỗi khi upload ảnh: " + e.getMessage());
+        }
     }
+
 }

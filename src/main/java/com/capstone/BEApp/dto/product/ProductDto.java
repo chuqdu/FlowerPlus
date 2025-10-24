@@ -1,5 +1,7 @@
 package com.capstone.BEApp.dto.product;
 
+import com.capstone.BEApp.dto.flower.FlowerDto;
+import com.capstone.BEApp.dto.item.ItemDto;
 import lombok.*;
 import java.math.BigDecimal;
 import java.util.List;
@@ -15,7 +17,6 @@ public class ProductDto {
     private String status;
     private BigDecimal productPrice;
     private String mainImageUrl;
-    private List<String> flowerNames;
-    private List<String> itemNames;
+    private List<FlowerDto> flowers;
+    private List<ItemDto> items;
 }
-

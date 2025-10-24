@@ -34,20 +34,24 @@ public class ProductController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Page<ProductDto> products = productService.searchProducts(
-                keyword, status, minPrice, maxPrice, PageRequest.of(page - 1, size), categoryId
-        );
+        try {
+            Page<ProductDto> products = productService.searchProducts(
+                    keyword, status, minPrice, maxPrice, PageRequest.of(page - 1, size), categoryId
+            );
 
-        return ResponseDto.successWithPagination(
-                products.getContent(),
-                "Lấy Giỏ Hoa Thành Công",
-                products
-        );
+            return ResponseDto.successWithPagination(
+                    products.getContent(),
+                    "Lấy giỏ hoa thành công",
+                    products
+            );
+
+        } catch (Exception e) {
+            return ResponseDto.fail("Lỗi khi tìm kiếm sản phẩm: " + e.getMessage());
+        }
     }
 
-
     @PostMapping
-    public ResponseDto createProduct(@RequestBody CreateProductDto dto) {
+    public ResponseDto<ProductDto> createProduct(@RequestBody CreateProductDto dto) {
         try {
             ProductDto created = productService.createProduct(dto);
             return ResponseDto.success(created,"Tạo sản phẩm thành công");
@@ -57,7 +61,7 @@ public class ProductController {
     }
 
     @PutMapping()
-    public ResponseDto updateProduct( @RequestBody UpdateProductDto dto) {
+    public ResponseDto<ProductDto>  updateProduct( @RequestBody UpdateProductDto dto) {
         try {
             ProductDto updated = productService.updateProduct(dto);
             return ResponseDto.success(updated, "Cập nhật sản phẩm thành công");

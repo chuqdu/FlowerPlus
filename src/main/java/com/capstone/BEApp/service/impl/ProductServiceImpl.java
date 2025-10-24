@@ -1,6 +1,8 @@
 package com.capstone.BEApp.service.impl;
 
 import com.capstone.BEApp.constant.ProductStatus;
+import com.capstone.BEApp.dto.flower.FlowerDto;
+import com.capstone.BEApp.dto.item.ItemDto;
 import com.capstone.BEApp.dto.product.CreateProductDto;
 import com.capstone.BEApp.dto.product.ProductDto;
 import com.capstone.BEApp.dto.product.UpdateProductDto;
@@ -195,19 +197,43 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private ProductDto mapToDto(Product product) {
-        List<String> flowerNames = product.getProductFlowers() != null
+        List<FlowerDto> flowers = product.getProductFlowers() != null
                 ? product.getProductFlowers().stream()
                 .map(ProductFlower::getFlower)
                 .filter(f -> f != null)
-                .map(f -> f.getName())
+                .map(f -> FlowerDto.builder()
+                        .id(f.getId())
+                        .name(f.getName())
+                        .description(f.getDescription())
+                        .price(f.getPrice())
+                        .quality(f.getQuality())
+                        .status(f.getStatus())
+                        .season(f.getSeason())
+                        .createdDate(f.getCreatedDate())
+                        .imageUrls(f.getImages() != null
+                                ? f.getImages().stream()
+                                .map(img -> img.getUrl())
+                                .collect(Collectors.toList())
+                                : List.of())
+                        .build())
                 .collect(Collectors.toList())
                 : List.of();
 
-        List<String> itemNames = product.getProductItems() != null
+        List<ItemDto> items = product.getProductItems() != null
                 ? product.getProductItems().stream()
                 .map(ProductItems::getItems)
                 .filter(i -> i != null)
-                .map(i -> i.getName())
+                .map(i -> ItemDto.builder()
+                        .id(i.getId())
+                        .name(i.getName())
+                        .price(i.getPrice())
+                        .description(i.getDescription())
+                        .imageUrls(i.getImages() != null
+                                ? i.getImages().stream()
+                                .map(img -> img.getUrl())
+                                .collect(Collectors.toList())
+                                : List.of())
+                        .build())
                 .collect(Collectors.toList())
                 : List.of();
 
@@ -222,8 +248,9 @@ public class ProductServiceImpl implements ProductService {
                 .status(product.getStatus())
                 .productPrice(product.getProductPrice())
                 .mainImageUrl(mainImageUrl)
-                .flowerNames(flowerNames)
-                .itemNames(itemNames)
+                .flowers(flowers)
+                .items(items)
                 .build();
     }
+
 }

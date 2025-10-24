@@ -18,17 +18,32 @@ public class ItemController {
 
     @PostMapping
     public ResponseDto<ItemDto> create(@RequestBody CreateItemDto dto) {
-        return ResponseDto.success(itemService.create(dto), "Thêm sản phẩm thành công");
+        try {
+            ItemDto created = itemService.create(dto);
+            return ResponseDto.success(created, "Thêm sản phẩm thành công");
+        } catch (Exception e) {
+            return ResponseDto.fail("Lỗi khi thêm sản phẩm: " + e.getMessage());
+        }
     }
 
-    @PutMapping()
+    @PutMapping
     public ResponseDto<ItemDto> update(@RequestBody UpdateItemDto dto) {
-        return ResponseDto.success(itemService.update(dto), "Cập nhật sản phẩm thành công");
+        try {
+            ItemDto updated = itemService.update(dto);
+            return ResponseDto.success(updated, "Cập nhật sản phẩm thành công");
+        } catch (Exception e) {
+            return ResponseDto.fail("Lỗi khi cập nhật sản phẩm: " + e.getMessage());
+        }
     }
 
     @GetMapping("/{id}")
     public ResponseDto<ItemDto> getById(@PathVariable Long id) {
-        return ResponseDto.success(itemService.getById(id), "Lấy thông tin sản phẩm thành công");
+        try {
+            ItemDto item = itemService.getById(id);
+            return ResponseDto.success(item, "Lấy thông tin sản phẩm thành công");
+        } catch (Exception e) {
+            return ResponseDto.fail("Lỗi khi lấy thông tin sản phẩm: " + e.getMessage());
+        }
     }
 
     @GetMapping
@@ -37,7 +52,16 @@ public class ItemController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Page<ItemDto> result = itemService.search(keyword, page - 1, size);
-        return ResponseDto.successWithPagination(result.getContent(), "Lấy danh sách sản phẩm thành công", result);
+        try {
+            Page<ItemDto> result = itemService.search(keyword, page - 1, size);
+            return ResponseDto.successWithPagination(
+                    result.getContent(),
+                    "Lấy danh sách sản phẩm thành công",
+                    result
+            );
+        } catch (Exception e) {
+            return ResponseDto.fail("Lỗi khi tìm kiếm sản phẩm: " + e.getMessage());
+        }
     }
+
 }
