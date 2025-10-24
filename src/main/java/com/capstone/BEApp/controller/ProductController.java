@@ -3,6 +3,7 @@ package com.capstone.BEApp.controller;
 import com.capstone.BEApp.dto.common.ResponseDto;
 import com.capstone.BEApp.dto.product.CreateProductDto;
 import com.capstone.BEApp.dto.product.ProductDto;
+import com.capstone.BEApp.dto.product.UpdateProductDto;
 import com.capstone.BEApp.service.ProductService;
 import jakarta.annotation.security.PermitAll;
 import lombok.RequiredArgsConstructor;
@@ -54,4 +55,15 @@ public class ProductController {
             return ResponseDto.fail("Lỗi khi thêm sản phẩm: " + e.getMessage());
         }
     }
+
+    @PutMapping()
+    public ResponseDto updateProduct( @RequestBody UpdateProductDto dto) {
+        try {
+            ProductDto updated = productService.updateProduct(dto);
+            return ResponseDto.success(updated, "Cập nhật sản phẩm thành công");
+        } catch (Exception e) {
+            return ResponseDto.fail("Lỗi khi cập nhật sản phẩm: " + e.getMessage());
+        }
+    }
+
 }

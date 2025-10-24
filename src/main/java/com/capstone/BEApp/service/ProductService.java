@@ -2,6 +2,7 @@ package com.capstone.BEApp.service;
 
 import com.capstone.BEApp.dto.product.CreateProductDto;
 import com.capstone.BEApp.dto.product.ProductDto;
+import com.capstone.BEApp.dto.product.UpdateProductDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -19,5 +20,5 @@ public interface ProductService {
     );
 
     ProductDto createProduct(CreateProductDto dto) ;
-
+    ProductDto updateProduct(UpdateProductDto dto);
 }
