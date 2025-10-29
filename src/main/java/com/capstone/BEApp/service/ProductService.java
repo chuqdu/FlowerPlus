@@ -1,24 +1,22 @@
 package com.capstone.BEApp.service;
 
-import com.capstone.BEApp.dto.product.CreateProductDto;
-import com.capstone.BEApp.dto.product.ProductDto;
-import com.capstone.BEApp.dto.product.UpdateProductDto;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
-import java.math.BigDecimal;
+import com.capstone.BEApp.dto.product.LinkProductRequestDto;
+import com.capstone.BEApp.dto.product.ProductRequestDto;
+import com.capstone.BEApp.dto.product.ProductResponseDto;
+import com.capstone.BEApp.entity.enumFile.ProductType;
+import org.springframework.data.domain.Page;
+
+import java.util.List;
 
 public interface ProductService {
-
-    Page<ProductDto> searchProducts(
-            String keyword,
-            String status,
-            BigDecimal minPrice,
-            BigDecimal maxPrice,
-            Pageable pageable,
-            Long categoryId
-    );
-
-    ProductDto createProduct(CreateProductDto dto) ;
-    ProductDto updateProduct(UpdateProductDto dto);
+    ProductResponseDto createProduct(ProductRequestDto requestDto);
+    ProductResponseDto updateProduct(Long id, ProductRequestDto requestDto);
+    ProductResponseDto getProduct(Long id);
+    List<ProductResponseDto> getAllActiveProducts();
+    Page<ProductResponseDto> getProductsByFlowerCategory(Long categoryId, String keyword, int page, int size);
+    Page<ProductResponseDto> searchProductsWithType(String keyword, ProductType type, int page, int size);
+    void softDeleteProduct(Long id);
+    void hardDeleteProduct(Long id);
+    void linkProducts(LinkProductRequestDto request);
 }

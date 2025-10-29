@@ -16,12 +16,6 @@ public class Image {
     @Column(columnDefinition = "TEXT")
     private String url;
 
-    @ManyToOne @JoinColumn(name = "flower_id")
-    private Flower flower;
-
-    @ManyToOne @JoinColumn(name = "items_id")
-    private Items items;
-
     @ManyToOne @JoinColumn(name = "product_id")
     private Product product;
 }
