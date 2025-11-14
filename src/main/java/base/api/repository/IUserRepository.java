@@ -1,7 +1,7 @@
 package base.api.repository;
 
 import base.api.enums.UserRole;
-import base.api.entity.user.UserModel;
+import base.api.entity.UserModel;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;

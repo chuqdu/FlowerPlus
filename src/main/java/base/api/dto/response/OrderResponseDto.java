@@ -1,9 +1,6 @@
 package base.api.dto.response;
 
 import base.api.entity.OrderItemModel;
-import base.api.entity.TransactionModel;
-import base.api.entity.user.UserModel;
-import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 

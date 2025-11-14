@@ -27,6 +27,7 @@ public class ProductController extends BaseAPIController {
 
     @PostMapping("create-product")
     public ResponseEntity<TFUResponse<ProductModel>> createProduct(@RequestBody ProductDto dto) {
+        dto.setUserId(getCurrentUserId());
         ProductModel productModel = productService.createProduct(dto);
         if (productModel == null) {
             return badRequest("Không tạo được product");
@@ -36,6 +37,7 @@ public class ProductController extends BaseAPIController {
 
     @PutMapping("update-product")
     public ResponseEntity<TFUResponse<ProductModel>> updateProduct(@RequestBody ProductDto dto){
+        dto.setUserId(getCurrentUserId());
         ProductModel productModel = productService.updateProduct(dto);
         if(productModel == null){
             return badRequest("Không tìm thấy product");
@@ -48,11 +50,32 @@ public class ProductController extends BaseAPIController {
             @RequestParam(value = "type", required = false) ProductType type,
             @RequestParam(value = "active", required = false) Boolean active,
             @RequestParam(value = "categoryId", required = false) Long categoryId,
+            @RequestParam(value = "custom", required = false) boolean custom,
+
             PageableRequestDTO pageableRequest
     ) {
-        Page<ProductResponse> page = productService.getProducts(type, active, categoryId, pageableRequest);
+        Long userId = getCurrentUserId();
+        Page<ProductResponse> page = productService.getProducts(type, active, categoryId, custom, userId, pageableRequest);
         return successPage(page);
     }
+
+
+    @GetMapping("get-list-product-by-user")
+    public ResponseEntity<TFUResponse<PageResponseDTO<ProductResponse>>> getProductsByUser(
+            @RequestParam(value = "type", required = false) ProductType type,
+            @RequestParam(value = "active", required = false) Boolean active,
+            @RequestParam(value = "categoryId", required = false) Long categoryId,
+            @RequestParam(value = "custom", required = false) boolean custom,
+            PageableRequestDTO pageableRequest
+    ) {
+        Long userId = getCurrentUserId();
+        Page<ProductResponse> page = productService.getProducts(type, active, categoryId, custom, userId, pageableRequest);
+        return successPage(page);
+    }
+
+
+
+
 
     @GetMapping("get-product-by-id")
     public ResponseEntity<TFUResponse<ProductResponse>> getProductById(@RequestParam Long id){

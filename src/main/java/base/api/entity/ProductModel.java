@@ -21,6 +21,15 @@ public class ProductModel extends BaseModel {
     private ProductType productType;
     private Boolean isActive = true;
     private String images;
+    @Column(name = "user_id")
+    private Long userId;
+    private boolean isCustom = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    @JsonManagedReference
+    private UserModel userModel;
+
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
@@ -29,4 +38,5 @@ public class ProductModel extends BaseModel {
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<ProductCompositionModel> compositions = new ArrayList<>();
+
 }

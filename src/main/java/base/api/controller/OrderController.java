@@ -1,6 +1,7 @@
 package base.api.controller;
 
 import base.api.base.BaseAPIController;
+import base.api.dto.request.CheckoutDto;
 import base.api.dto.request.OrderDto;
 import base.api.dto.response.OrderResponseDto;
 import base.api.dto.response.TFUResponse;
@@ -33,11 +34,28 @@ public class OrderController extends BaseAPIController {
     ModelMapper mapper;
 
     @PostMapping("checkout")
-    public ResponseEntity<TFUResponse<Map<String, Object>>> checkout() throws Exception {
+    public ResponseEntity<TFUResponse<Map<String, Object>>> checkout(@RequestBody CheckoutDto dto) throws Exception {
         Long userId = getCurrentUserId();
         String returnUrl = "https://gooogle.com";
         String cancelUrl = "https://gooogle.com";
-        String result = orderService.checkout(userId, returnUrl, cancelUrl);
+        dto.setUserId(userId);
+        dto.setReturnUrl(returnUrl);
+        dto.setCancelUrl(cancelUrl);
+        String result = orderService.checkout(dto);
+        Map<String, Object> data = new HashMap<>();
+        data.put("checkoutUrl", result);
+        return success(data);
+    }
+
+    @PostMapping("checkout-product")
+    public ResponseEntity<TFUResponse<Map<String, Object>>> checkoutProduct(@RequestBody CheckoutDto dto) throws Exception {
+        Long userId = getCurrentUserId();
+        String returnUrl = "https://gooogle.com";
+        String cancelUrl = "https://gooogle.com";
+        dto.setUserId(userId);
+        dto.setReturnUrl(returnUrl);
+        dto.setCancelUrl(cancelUrl);
+        String result = orderService.checkoutCustomProduct(dto);
         Map<String, Object> data = new HashMap<>();
         data.put("checkoutUrl", result);
         return success(data);

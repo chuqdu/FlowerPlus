@@ -1,8 +1,10 @@
 package base.api.service.impl;
 
+import base.api.dto.request.CheckoutDto;
 import base.api.dto.request.OrderDto;
 import base.api.entity.*;
 import base.api.repository.*;
+import base.api.service.ICartService;
 import base.api.service.IOrderService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -34,12 +36,21 @@ public class OrderService implements IOrderService {
     private IOrderItemRepository orderItemRepository;
 
     @Autowired
+    private ICartService cartService;
+
+    @Autowired
+    private IUserRepository userRepository;
+
+    @Autowired
+    private IProductRepository productRepository;
+
+    @Autowired
     private  ITransactionRepository txRepo;
 
     @Transactional
     @Override
-    public String checkout(Long userId, String returnUrl, String cancelUrl) throws Exception {
-        CartModel cart = cartRepo.findByUser_Id(userId)
+    public String checkout(CheckoutDto dto) throws Exception {
+        CartModel cart = cartRepo.findByUser_Id(dto.getUserId())
                 .orElseThrow(() -> new EntityNotFoundException("Cart not found"));
         if (cart.getCartItems().isEmpty()) throw new IllegalStateException("Cart is empty");
 
@@ -48,6 +59,9 @@ public class OrderService implements IOrderService {
         order.setUser(cart.getUser());
         order.setOrderCode(String.valueOf(System.currentTimeMillis() / 1000));
         order.setStatus("UNPAID");
+        order.setShippingAddress(dto.getShippingAddress());
+        order.setPhoneNumber(dto.getPhoneNumber());
+        order.setNote(dto.getNote());
 
         for (CartItemModel ci : cart.getCartItems()) {
             order.addItem(OrderItemModel.of(
@@ -69,8 +83,8 @@ public class OrderService implements IOrderService {
                 .orderCode(orderCode)
                 .amount(amount)
                 .description("TXN" + order.getOrderCode())
-                .returnUrl(returnUrl)
-                .cancelUrl(cancelUrl)
+                .returnUrl(dto.getReturnUrl())
+                .cancelUrl(dto.getCancelUrl())
                 .build();
 
         CheckoutResponseData result = payOS.createPaymentLink(paymentData);
@@ -85,6 +99,9 @@ public class OrderService implements IOrderService {
         tx.setPaymentLinkId(result.getPaymentLinkId());
         txRepo.save(tx);
 
+        // clear cart
+        cartService.clearCart(cart.getUser().getId());
+
         return result.getCheckoutUrl();
     }
 
@@ -96,5 +113,31 @@ public class OrderService implements IOrderService {
     @Override
     public List<OrderModel> getOrdersByUserId(Long userId) {
         return orderRepo.findByUser_IdOrderByCreatedAtDesc(userId);
+    }
+
+    @Override
+    public String checkoutCustomProduct(CheckoutDto dto) throws Exception {
+        UserModel user = userRepository.findById(dto.getUserId())
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        ProductModel product = productRepository.findById(dto.getProductId()).orElseThrow(() -> new EntityNotFoundException("Product not found"));
+
+        OrderModel order = new OrderModel();
+        order.setUser(user);
+        order.setNote(dto.getNote());
+        order.setOrderCode(String.valueOf(System.currentTimeMillis() / 1000));
+        order.setStatus("PENDING_APPROVED");
+        order.setShippingAddress(dto.getShippingAddress());
+        order.setPhoneNumber(dto.getPhoneNumber());
+        order.addItem(OrderItemModel.of(
+                product.getId(),
+                product.getName(),
+                product.getImages(),
+                product.getPrice(),
+                dto.getQuantity()
+        ));
+        order.recalcTotal();
+        orderRepo.save(order);
+
+        return "";
     }
 }
