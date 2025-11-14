@@ -12,5 +12,6 @@ public class CheckoutDto {
     private String returnUrl;
     private String cancelUrl;
     private String note;
+    private Long orderId;
     private int quantity;
 }

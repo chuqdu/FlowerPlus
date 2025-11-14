@@ -74,9 +74,6 @@ public class ProductController extends BaseAPIController {
     }
 
 
-
-
-
     @GetMapping("get-product-by-id")
     public ResponseEntity<TFUResponse<ProductResponse>> getProductById(@RequestParam Long id){
         ProductResponse productModel = productService.getProductById(id);

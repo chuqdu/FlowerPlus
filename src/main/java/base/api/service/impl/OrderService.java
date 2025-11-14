@@ -1,19 +1,25 @@
 package base.api.service.impl;
 
+import base.api.dto.request.AddTransactionToOrderDto;
 import base.api.dto.request.CheckoutDto;
 import base.api.dto.request.OrderDto;
 import base.api.entity.*;
+import base.api.enums.DeliveryStep;
 import base.api.repository.*;
 import base.api.service.ICartService;
+import base.api.service.IDeliveryStatusService;
 import base.api.service.IOrderService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import vn.payos.PayOS;
-import vn.payos.type.CheckoutResponseData;
-import vn.payos.type.PaymentData;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkRequest;
+import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 
@@ -47,6 +53,10 @@ public class OrderService implements IOrderService {
     @Autowired
     private  ITransactionRepository txRepo;
 
+
+
+    @Autowired private IDeliveryStatusService deliveryStatusService;
+
     @Transactional
     @Override
     public String checkout(CheckoutDto dto) throws Exception {
@@ -58,7 +68,7 @@ public class OrderService implements IOrderService {
         OrderModel order = new OrderModel();
         order.setUser(cart.getUser());
         order.setOrderCode(String.valueOf(System.currentTimeMillis() / 1000));
-        order.setStatus("UNPAID");
+
         order.setShippingAddress(dto.getShippingAddress());
         order.setPhoneNumber(dto.getPhoneNumber());
         order.setNote(dto.getNote());
@@ -75,20 +85,29 @@ public class OrderService implements IOrderService {
         order.recalcTotal();
         orderRepo.save(order);
 
+        deliveryStatusService.setCurrentStepCascading(
+                order.getId(),
+                DeliveryStep.PENDING_CONFIRMATION,
+                "",
+                null,
+                null,
+                dto.getUserId()
+        );
+
         // Gọi PayOS
-        int amount = (int) order.getTotal();
+        long amount = (long) order.getTotal();
         long orderCode = System.currentTimeMillis() / 1000;
 
-        PaymentData paymentData = PaymentData.builder()
-                .orderCode(orderCode)
-                .amount(amount)
-                .description("TXN" + order.getOrderCode())
-                .returnUrl(dto.getReturnUrl())
-                .cancelUrl(dto.getCancelUrl())
-                .build();
+        CreatePaymentLinkRequest paymentData =
+                CreatePaymentLinkRequest.builder()
+                        .orderCode(orderCode)
+                        .amount(amount)
+                        .description("Thanh toan")
+                        .returnUrl(dto.getReturnUrl())
+                        .cancelUrl(dto.getCancelUrl())
+                        .build();
 
-        CheckoutResponseData result = payOS.createPaymentLink(paymentData);
-
+        CreatePaymentLinkResponse result = payOS.paymentRequests().create(paymentData);
         // Lưu transaction
         TransactionModel tx = new TransactionModel();
         tx.setOrder(order);
@@ -99,7 +118,6 @@ public class OrderService implements IOrderService {
         tx.setPaymentLinkId(result.getPaymentLinkId());
         txRepo.save(tx);
 
-        // clear cart
         cartService.clearCart(cart.getUser().getId());
 
         return result.getCheckoutUrl();
@@ -125,7 +143,7 @@ public class OrderService implements IOrderService {
         order.setUser(user);
         order.setNote(dto.getNote());
         order.setOrderCode(String.valueOf(System.currentTimeMillis() / 1000));
-        order.setStatus("PENDING_APPROVED");
+
         order.setShippingAddress(dto.getShippingAddress());
         order.setPhoneNumber(dto.getPhoneNumber());
         order.addItem(OrderItemModel.of(
@@ -137,7 +155,51 @@ public class OrderService implements IOrderService {
         ));
         order.recalcTotal();
         orderRepo.save(order);
+        deliveryStatusService.setCurrentStepCascading(
+                order.getId(),
+                DeliveryStep.PENDING_CONFIRMATION,
+                "",
+                "",
+                "",
+                dto.getUserId()
+        );
+
 
         return "";
+    }
+
+    @Override
+    public String addPaymentToOrder(AddTransactionToOrderDto dto) throws Exception {
+        OrderModel order = orderRepo.findById(dto.getOrderId())
+                .orElseThrow(() -> new EntityNotFoundException("Order not found"));
+        long amount = (long) dto.getAmount();
+        Long transactionCode = System.currentTimeMillis() / 1000;
+        long expiredAt = Instant.now().getEpochSecond() + 5 * 60;
+
+        CreatePaymentLinkRequest paymentData =
+                CreatePaymentLinkRequest.builder()
+                        .orderCode(transactionCode)
+                        .amount(amount)
+                        .expiredAt(expiredAt)
+                        .description("Thanh toan 3 ngay")
+                        .returnUrl(dto.getReturnUrl())
+                        .cancelUrl(dto.getCancelUrl())
+                        .build();
+
+        CreatePaymentLinkResponse response = payOS.paymentRequests().create(paymentData);
+
+        // Lưu transaction
+        TransactionModel tx = new TransactionModel();
+        tx.setOrder(order);
+        tx.setOrderCode(String.valueOf(transactionCode));
+        tx.setAmount(amount);
+        tx.setStatus("PENDING");
+        tx.setCheckoutUrl(response.getCheckoutUrl());
+        tx.setPaymentLinkId(response.getPaymentLinkId());
+
+        txRepo.save(tx);
+
+        orderRepo.save(order);
+        return response.getCheckoutUrl();
     }
 }

@@ -39,4 +39,8 @@ public class ProductModel extends BaseModel {
     @JsonManagedReference
     private List<ProductCompositionModel> compositions = new ArrayList<>();
 
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonBackReference("product-order-items")
+    private List<OrderItemModel> orderItems = new ArrayList<>();
+
 }

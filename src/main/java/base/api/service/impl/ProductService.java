@@ -241,7 +241,7 @@ public class ProductService implements IProductService {
             if (active != null) {
                 preds.add(cb.equal(root.get("isActive"), active));
             }
-            if (custom != null) {
+            if (custom == true) {
                 preds.add(cb.equal(root.get("isCustom"), custom));
                 preds.add(cb.equal(root.get("userId"), userId));
             }

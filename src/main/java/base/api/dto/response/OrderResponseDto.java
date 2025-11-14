@@ -1,6 +1,8 @@
 package base.api.dto.response;
 
+import base.api.entity.DeliveryStatusModel;
 import base.api.entity.OrderItemModel;
+import base.api.entity.TransactionModel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,11 +18,13 @@ public class OrderResponseDto {
     private String orderCode;
 
     private double total;
-    private String status = "UNPAID";
 
-    private List<TransactionDto> transactions = new ArrayList<>();
+    private TransactionModel transaction;
+    private Long id;
 
-    private List<OrderItemModel> items = new ArrayList<>();
+    private List<OrderItemResponseDto> items = new ArrayList<>();
+
+    private List<DeliveryStatusModel> deliveryStatuses = new ArrayList<>();
 
 
 }
