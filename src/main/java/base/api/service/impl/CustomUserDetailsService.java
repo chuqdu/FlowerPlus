@@ -1,6 +1,6 @@
 package base.api.service.impl;
 
-import base.api.entity.user.UserModel;
+import base.api.entity.UserModel;
 import base.api.repository.IUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User;

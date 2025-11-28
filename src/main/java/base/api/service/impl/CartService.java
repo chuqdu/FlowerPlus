@@ -1,13 +1,12 @@
 package base.api.service.impl;
 
-import base.api.dto.request.CartDto;
 import base.api.dto.request.CartItemRequest;
 import base.api.dto.request.CartItemUpdateRequest;
 import base.api.dto.request.CartResponse;
 import base.api.entity.CartItemModel;
 import base.api.entity.CartModel;
 import base.api.entity.ProductModel;
-import base.api.entity.user.UserModel;
+import base.api.entity.UserModel;
 import base.api.repository.ICartItemRepository;
 import base.api.repository.ICartRepository;
 import base.api.repository.IProductRepository;

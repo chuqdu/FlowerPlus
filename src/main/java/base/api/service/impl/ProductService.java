@@ -49,6 +49,8 @@ public class ProductService implements IProductService {
         product.setDescription(dto.getDescription());
         product.setPrice(dto.getPrice());
         product.setStock(dto.getStock());
+        product.setUserId(dto.getUserId());
+        product.setCustom(dto.isCustom());
         product.setProductType(dto.getProductType());
         product.setIsActive(dto.getIsActive() == null ? Boolean.TRUE : dto.getIsActive());
         product.setImages(dto.getImages());
@@ -225,7 +227,8 @@ public class ProductService implements IProductService {
 
     @Transactional
     @Override
-    public Page<ProductResponse> getProducts(ProductType type, Boolean active, Long categoryId, PageableRequestDTO pageableRequest) {
+    public Page<ProductResponse> getProducts(ProductType type, Boolean active, Long categoryId, Boolean custom, Long userId,
+                                             PageableRequestDTO pageableRequest) {
         pageableRequest.validate();
         Pageable pageable = pageableRequest.toPageable();
 
@@ -237,6 +240,10 @@ public class ProductService implements IProductService {
             }
             if (active != null) {
                 preds.add(cb.equal(root.get("isActive"), active));
+            }
+            if (custom == true) {
+                preds.add(cb.equal(root.get("isCustom"), custom));
+                preds.add(cb.equal(root.get("userId"), userId));
             }
             if (pageableRequest.getKeyword() != null && !pageableRequest.getKeyword().isBlank()) {
                 preds.add(cb.like(cb.lower(root.get("name")),

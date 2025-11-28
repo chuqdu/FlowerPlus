@@ -1,12 +1,8 @@
-package base.api.entity.user;
+package base.api.entity;
 
 
-import base.api.entity.CartModel;
 import base.api.enums.UserGender;
 import base.api.enums.UserRole;
-import base.api.entity.BaseModel;
-import base.api.entity.CategoryModel;
-import base.api.entity.OrderModel;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -64,6 +60,7 @@ public class UserModel extends BaseModel {
             mappedBy = "user",
             cascade = CascadeType.ALL, orphanRemoval = true
     )
+    @JsonBackReference
     private List<OrderModel> orders = new ArrayList<>();
 
     @OneToOne(
@@ -75,6 +72,22 @@ public class UserModel extends BaseModel {
     @JsonManagedReference
     @ToString.Exclude @EqualsAndHashCode.Exclude
     private CartModel cart;
+
+    @OneToMany(
+            mappedBy = "userModel",
+            cascade = CascadeType.ALL, orphanRemoval = true
+    )
+    @JsonBackReference
+    @ToString.Exclude @EqualsAndHashCode.Exclude
+    private List<ProductModel> products = new ArrayList<>();
+
+    @OneToMany(
+            mappedBy = "userModel",
+            cascade = CascadeType.ALL, orphanRemoval = true
+    )
+    @JsonManagedReference
+    @ToString.Exclude @EqualsAndHashCode.Exclude
+    private List<DeliveryAddressModel> deliveryAddresses = new ArrayList<>();
 
     public void setCart(CartModel cart) {
         this.cart = cart;

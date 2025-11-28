@@ -1,6 +1,5 @@
 package base.api.entity;
 
-import base.api.entity.user.UserModel;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;

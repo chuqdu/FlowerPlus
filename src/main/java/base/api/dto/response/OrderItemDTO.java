@@ -1,4 +1,4 @@
-package base.api.dto;
+package base.api.dto.response;
 
 import lombok.Data;
 

@@ -2,7 +2,7 @@ package base.api.config;
 
 import base.api.enums.UserGender;
 import base.api.enums.UserRole;
-import base.api.entity.user.UserModel;
+import base.api.entity.UserModel;
 import base.api.service.impl.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;

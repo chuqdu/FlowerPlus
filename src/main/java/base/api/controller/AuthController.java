@@ -6,9 +6,8 @@ import base.api.dto.request.*;
 import base.api.dto.response.AuthResponse;
 import base.api.dto.response.TFUResponse;
 import base.api.dto.response.UserDto;
-import base.api.entity.user.UserModel;
+import base.api.entity.UserModel;
 import base.api.service.IUserService;
-import org.apache.catalina.mapper.Mapper;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -69,16 +68,25 @@ public class AuthController extends BaseAPIController {
         }
         return success(user);
     }
-        @GetMapping("me")
-        public ResponseEntity<TFUResponse<UserDto>> getUserInfo(){
-            UserModel user = userService.findById(getCurrentUserId());
-            if(user == null){
-                return badRequest("Không tìm thấy user");
-            }
-
-            UserDto userDto = mapper.map(user, UserDto.class);
-
-            return success(userDto);
+    @GetMapping("me")
+    public ResponseEntity<TFUResponse<UserDto>> getUserInfo(){
+        UserModel user = userService.findById(getCurrentUserId());
+        if(user == null){
+            return badRequest("Không tìm thấy user");
         }
 
+        UserDto userDto = mapper.map(user, UserDto.class);
+
+        return success(userDto);
+    }
+
+    @PostMapping("create-update-address")
+    public ResponseEntity<TFUResponse<UserModel>> createUpdateAddress(@RequestBody DeliveryAddressDto dto){
+        dto.setUserId(getCurrentUserId());
+        UserModel user = userService.createUpdateUserAddress(dto);
+        if(user == null){
+            return badRequest("Không cập nhật được địa chỉ");
+        }
+        return success(user);
+    }
 }

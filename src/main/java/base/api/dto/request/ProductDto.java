@@ -16,7 +16,8 @@ public class ProductDto {
     private ProductType productType;
     private Boolean isActive = true;
     private String images;
-
+    private boolean isCustom = false;
+    private Long userId;
     private List<Long> categoryIds;
 
     private List<ProductCompositionDto> compositions;

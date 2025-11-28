@@ -1,19 +1,22 @@
 package base.api.controller;
 
 import base.api.base.BaseAPIController;
-import base.api.dto.request.OrderDto;
+import base.api.dto.request.*;
 import base.api.dto.response.OrderResponseDto;
 import base.api.dto.response.TFUResponse;
 import base.api.entity.OrderModel;
+import base.api.service.IDeliveryStatusService;
 import base.api.service.IOrderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.parameters.P;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 import vn.payos.PayOS;
-import vn.payos.type.*;
+import vn.payos.model.webhooks.Webhook;
+import vn.payos.model.webhooks.WebhookData;
 
 import java.util.HashMap;
 import java.util.List;
@@ -30,17 +33,51 @@ public class OrderController extends BaseAPIController {
     PayOS payOS;
 
     @Autowired
+    IDeliveryStatusService deliveryStatusService;
+
+    @Autowired
     ModelMapper mapper;
 
     @PostMapping("checkout")
-    public ResponseEntity<TFUResponse<Map<String, Object>>> checkout() throws Exception {
+    public ResponseEntity<TFUResponse<Map<String, Object>>> checkout(@RequestBody CheckoutDto dto) throws Exception {
         Long userId = getCurrentUserId();
         String returnUrl = "https://gooogle.com";
         String cancelUrl = "https://gooogle.com";
-        String result = orderService.checkout(userId, returnUrl, cancelUrl);
+        dto.setUserId(userId);
+        dto.setReturnUrl(returnUrl);
+        dto.setCancelUrl(cancelUrl);
+        String result = orderService.checkout(dto);
         Map<String, Object> data = new HashMap<>();
         data.put("checkoutUrl", result);
         return success(data);
+    }
+
+    @PostMapping("checkout-product")
+    public ResponseEntity<TFUResponse<Map<String, Object>>> checkoutProduct(@RequestBody CheckoutDto dto) throws Exception {
+        Long userId = getCurrentUserId();
+        String returnUrl = "https://gooogle.com";
+        String cancelUrl = "https://gooogle.com";
+        dto.setUserId(userId);
+        dto.setReturnUrl(returnUrl);
+        dto.setCancelUrl(cancelUrl);
+        String result = orderService.checkoutCustomProduct(dto);
+        Map<String, Object> data = new HashMap<>();
+        data.put("checkoutUrl", result);
+        return success(data);
+    }
+
+    @PostMapping("add-transaction-to-order")
+    public ResponseEntity<TFUResponse<String>> addTransactionToOrder(
+            @RequestBody AddTransactionToOrderDto dto
+    ) throws Exception {
+        Long userId = getCurrentUserId();
+        String returnUrl = "https://gooogle.com";
+        String cancelUrl = "https://gooogle.com";
+        dto.setReturnUrl(returnUrl);
+        dto.setCancelUrl(cancelUrl);
+        dto.setUserId(userId);
+        String checkoutUrl = orderService.addPaymentToOrder(dto);
+        return success(checkoutUrl);
     }
 
     @GetMapping("get-list-orders")
@@ -65,14 +102,28 @@ public class OrderController extends BaseAPIController {
         return success(orders);
     }
 
-
+    @PostMapping("/{orderId}/delivery-status/set")
+    public ResponseEntity<TFUResponse<DeliveryStatusDto>> setStep(
+            @PathVariable Long orderId,
+            @RequestBody DeliveryStatusCreateDto body
+    ) {
+        var dto = deliveryStatusService.setCurrentStepCascading(
+                orderId,
+                body.getStep(),
+                body.getNote(),
+                body.getLocation(),
+                body.getImageUrl(),
+                getCurrentUserId()
+                );
+        return success(dto);
+    }
 
     @PostMapping("/webhook-payos")
     public ResponseEntity<TFUResponse<String>> handleWebhook(@RequestBody String rawJson){
         try{
             ObjectMapper objectMapper = new ObjectMapper();
             Webhook webhook = objectMapper.readValue(rawJson, Webhook.class);
-            WebhookData data = payOS.verifyPaymentWebhookData(webhook);
+            WebhookData data = payOS.webhooks().verify(webhook);
             return success(data.getCode());
         }
         catch (Exception e){

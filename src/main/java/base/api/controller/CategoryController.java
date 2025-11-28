@@ -33,11 +33,11 @@ public class CategoryController extends BaseAPIController {
         }
     }
 
-    @PostMapping("create-category-v2")
-    public ResponseEntity<CategoryModel> createCategoryV2(@RequestBody CreateCategoryDto dto) {
-        CategoryModel categoryModel = categoryService.create(dto);
-        return ResponseEntity.ok(categoryModel);
-    }
+//    @PostMapping("create-category-v2")
+//    public ResponseEntity<CategoryModel> createCategoryV2(@RequestBody CreateCategoryDto dto) {
+//        CategoryModel categoryModel = categoryService.create(dto);
+//        return ResponseEntity.ok(categoryModel);
+//    }
 
     @GetMapping("/tree")
     public ResponseEntity<TFUResponse<List<CategoryNodeDto>>> getTree() {

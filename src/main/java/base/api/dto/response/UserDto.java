@@ -1,5 +1,6 @@
 package base.api.dto.response;
 
+import base.api.entity.DeliveryAddressModel;
 import base.api.enums.UserGender;
 import base.api.enums.UserRole;
 import jakarta.persistence.Column;
@@ -12,6 +13,9 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -34,7 +38,6 @@ public class UserDto {
 
     public String email;
 
-    public String password;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 50)
@@ -43,5 +46,7 @@ public class UserDto {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    private List<DeliveryAddressModel> deliveryAddresses = new ArrayList<>();
 
 }

@@ -3,7 +3,7 @@ package base.api.service.impl;
 import base.api.dto.request.CategoryNodeDto;
 import base.api.dto.request.CreateCategoryDto;
 import base.api.entity.CategoryModel;
-import base.api.entity.user.UserModel;
+import base.api.entity.UserModel;
 import base.api.repository.ICategoryRepository;
 import base.api.repository.IProductRepository;
 import base.api.repository.IUserRepository;

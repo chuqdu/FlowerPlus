@@ -16,5 +16,5 @@ public interface IProductService {
     List<ProductModel> getListProduct();
     ProductResponse getProductById(Long id);
     String deleteProduct(Long id);
-    Page<ProductResponse> getProducts(ProductType type, Boolean active, Long categoryId, PageableRequestDTO pageableRequest);
+    Page<ProductResponse> getProducts(ProductType type, Boolean active, Long categoryId, Boolean custom, Long userId, PageableRequestDTO pageableRequest);
 }
