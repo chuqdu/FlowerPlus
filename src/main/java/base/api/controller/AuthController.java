@@ -89,4 +89,10 @@ public class AuthController extends BaseAPIController {
         }
         return success(user);
     }
+
+    @GetMapping("get-list-users")
+    public ResponseEntity<TFUResponse<Iterable<UserModel>>> getListUsers(){
+        Iterable<UserModel> users = userService.getAllUsers();
+        return success(users);
+    }
 }

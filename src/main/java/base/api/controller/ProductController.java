@@ -1,6 +1,5 @@
 package base.api.controller;
 
-
 import base.api.base.BaseAPIController;
 import base.api.dto.request.ProductDto;
 import base.api.dto.request.paging.PageResponseDTO;
@@ -36,10 +35,10 @@ public class ProductController extends BaseAPIController {
     }
 
     @PutMapping("update-product")
-    public ResponseEntity<TFUResponse<ProductModel>> updateProduct(@RequestBody ProductDto dto){
+    public ResponseEntity<TFUResponse<ProductModel>> updateProduct(@RequestBody ProductDto dto) {
         dto.setUserId(getCurrentUserId());
         ProductModel productModel = productService.updateProduct(dto);
-        if(productModel == null){
+        if (productModel == null) {
             return badRequest("Không tìm thấy product");
         }
         return success(productModel);
@@ -52,13 +51,12 @@ public class ProductController extends BaseAPIController {
             @RequestParam(value = "categoryId", required = false) Long categoryId,
             @RequestParam(value = "custom", required = false) boolean custom,
 
-            PageableRequestDTO pageableRequest
-    ) {
+            PageableRequestDTO pageableRequest) {
         Long userId = getCurrentUserId();
-        Page<ProductResponse> page = productService.getProducts(type, active, categoryId, custom, userId, pageableRequest);
+        Page<ProductResponse> page = productService.getProducts(type, active, categoryId, custom, userId,
+                pageableRequest);
         return successPage(page);
     }
-
 
     @GetMapping("get-list-product-by-user")
     public ResponseEntity<TFUResponse<PageResponseDTO<ProductResponse>>> getProductsByUser(
@@ -66,26 +64,24 @@ public class ProductController extends BaseAPIController {
             @RequestParam(value = "active", required = false) Boolean active,
             @RequestParam(value = "categoryId", required = false) Long categoryId,
             @RequestParam(value = "custom", required = false) boolean custom,
-            PageableRequestDTO pageableRequest
-    ) {
+            PageableRequestDTO pageableRequest) {
         Long userId = getCurrentUserId();
-        Page<ProductResponse> page = productService.getProducts(type, active, categoryId, custom, userId, pageableRequest);
+        Page<ProductResponse> page = productService.getProducts(type, active, categoryId, custom, userId,
+                pageableRequest);
         return successPage(page);
     }
 
-
     @GetMapping("get-product-by-id")
-    public ResponseEntity<TFUResponse<ProductResponse>> getProductById(@RequestParam Long id){
+    public ResponseEntity<TFUResponse<ProductResponse>> getProductById(@RequestParam Long id) {
         ProductResponse productModel = productService.getProductById(id);
-        if(productModel == null){
+        if (productModel == null) {
             return badRequest("Không tìm thấy product");
         }
         return success(productModel);
     }
 
-
     @DeleteMapping("delete-product")
-    public ResponseEntity<TFUResponse<String>> deleteProduct(@RequestParam Long id){
+    public ResponseEntity<TFUResponse<String>> deleteProduct(@RequestParam Long id) {
         String result = productService.deleteProduct(id);
         return success(result);
     }

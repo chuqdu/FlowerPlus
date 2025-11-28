@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CheckoutDto {
+    private String voucherCode;
     private Long userId;
     private Long productId;
     private String shippingAddress;

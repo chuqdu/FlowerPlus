@@ -1,6 +1,5 @@
 package base.api.entity;
 
-
 import base.api.enums.ProductType;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -29,7 +28,6 @@ public class ProductModel extends BaseModel {
     @JoinColumn(name = "user_id", insertable = false, updatable = false)
     @JsonManagedReference
     private UserModel userModel;
-
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference

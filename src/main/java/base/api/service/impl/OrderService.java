@@ -9,6 +9,7 @@ import base.api.repository.*;
 import base.api.service.ICartService;
 import base.api.service.IDeliveryStatusService;
 import base.api.service.IOrderService;
+import base.api.service.IVoucherService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +57,8 @@ public class OrderService implements IOrderService {
 
 
     @Autowired private IDeliveryStatusService deliveryStatusService;
+    @Autowired private IVoucherService voucherService;
+    @Autowired private IVoucherRepository voucherRepo;
 
     @Transactional
     @Override
@@ -81,6 +84,19 @@ public class OrderService implements IOrderService {
                     ci.getUnitPrice(),
                     ci.getQuantity()
             ));
+        }
+        // Áp dụng voucher nếu có
+        if (dto.getVoucherCode() != null && !dto.getVoucherCode().isBlank()) {
+            var validate = voucherService.validateForCart(dto.getUserId(), dto.getVoucherCode());
+            if (validate.isValid()) {
+                order.setVoucherCode(dto.getVoucherCode());
+                order.setDiscountAmount(validate.getDiscountAmount());
+                voucherRepo.findByCodeIgnoreCase(dto.getVoucherCode()).ifPresent(v -> {
+                    order.setVoucher(v);
+                    v.setUsedCount((v.getUsedCount() == null ? 0 : v.getUsedCount()) + 1);
+                    voucherRepo.save(v);
+                });
+            }
         }
         order.recalcTotal();
         orderRepo.save(order);
@@ -153,8 +169,28 @@ public class OrderService implements IOrderService {
                 product.getPrice(),
                 dto.getQuantity()
         ));
+
+        // Áp dụng voucher nếu có
+        if (dto.getVoucherCode() != null && !dto.getVoucherCode().isBlank()) {
+            base.api.dto.request.voucher.ValidateVoucherRequestItem x = new base.api.dto.request.voucher.ValidateVoucherRequestItem();
+            x.setProductId(product.getId());
+            x.setUnitPrice(product.getPrice());
+            x.setQuantity(dto.getQuantity());
+            var validate = voucherService.validateForItems(dto.getVoucherCode(), java.util.List.of(x));
+            if (validate.isValid()) {
+                order.setVoucherCode(dto.getVoucherCode());
+                order.setDiscountAmount(validate.getDiscountAmount());
+                voucherRepo.findByCodeIgnoreCase(dto.getVoucherCode()).ifPresent(v -> {
+                    order.setVoucher(v);
+                    v.setUsedCount((v.getUsedCount() == null ? 0 : v.getUsedCount()) + 1);
+                    voucherRepo.save(v);
+                });
+            }
+        }
+
         order.recalcTotal();
         orderRepo.save(order);
+
         deliveryStatusService.setCurrentStepCascading(
                 order.getId(),
                 DeliveryStep.PENDING_CONFIRMATION,
@@ -163,7 +199,6 @@ public class OrderService implements IOrderService {
                 "",
                 dto.getUserId()
         );
-
 
         return "";
     }

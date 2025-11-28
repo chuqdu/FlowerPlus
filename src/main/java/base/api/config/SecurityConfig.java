@@ -33,6 +33,7 @@ public class SecurityConfig {
             "/api/products/get-list-product",
             "/auth/forgot-password",
             "/api/categories/tree",
+            "/api/auth/register",
             "/auth/login-admin",
             "/auth/register",
             "/swagger-ui/**",
