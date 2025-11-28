@@ -32,10 +32,14 @@ public class CategoryService implements ICategoryService  {
     }
     @Override
     @Transactional(readOnly = true)
-    public List<CategoryNodeDto> getCategoryTree() {
-        List<CategoryModel> all = categoryRepository.findAll().stream()
-                .filter(CategoryModel::isPublic)
-                .collect(Collectors.toList());
+    public List<CategoryNodeDto> getCategoryTree(Boolean isPublic) {
+        List<CategoryModel> all = categoryRepository.findAll();
+
+        if (isPublic != null) {
+            all = all.stream()
+                    .filter(c -> c.isPublic() == isPublic)
+                    .collect(Collectors.toList());
+        }
 
         // Map id -> node DTO
         Map<Long, CategoryNodeDto> map = new HashMap<>(all.size());

@@ -9,7 +9,7 @@ import java.util.List;
 public interface ICategoryService {
     CategoryModel getById(Long id);
     CategoryModel create(CreateCategoryDto dto);
-    List<CategoryNodeDto> getCategoryTree();
+    List<CategoryNodeDto> getCategoryTree(Boolean isPublic);
     CategoryModel update(CreateCategoryDto dto);
 
 }

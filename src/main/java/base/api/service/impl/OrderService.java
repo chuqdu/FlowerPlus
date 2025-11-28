@@ -104,7 +104,7 @@ public class OrderService implements IOrderService {
         deliveryStatusService.setCurrentStepCascading(
                 order.getId(),
                 DeliveryStep.PENDING_CONFIRMATION,
-                "",
+                "Vui lòng thanh toán để xác nhận đơn hàng.",
                 null,
                 null,
                 dto.getUserId()
@@ -112,11 +112,11 @@ public class OrderService implements IOrderService {
 
         // Gọi PayOS
         long amount = (long) order.getTotal();
-        long orderCode = System.currentTimeMillis() / 1000;
+        long transactionCode = System.currentTimeMillis() / 1000;
 
         CreatePaymentLinkRequest paymentData =
                 CreatePaymentLinkRequest.builder()
-                        .orderCode(orderCode)
+                        .orderCode(transactionCode)
                         .amount(amount)
                         .description("Thanh toan")
                         .returnUrl(dto.getReturnUrl())
@@ -127,7 +127,7 @@ public class OrderService implements IOrderService {
         // Lưu transaction
         TransactionModel tx = new TransactionModel();
         tx.setOrder(order);
-        tx.setOrderCode(order.getOrderCode());
+        tx.setOrderCode(String.valueOf(transactionCode));
         tx.setAmount(order.getTotal());
         tx.setStatus("PENDING");
         tx.setCheckoutUrl(result.getCheckoutUrl());
@@ -194,7 +194,7 @@ public class OrderService implements IOrderService {
         deliveryStatusService.setCurrentStepCascading(
                 order.getId(),
                 DeliveryStep.PENDING_CONFIRMATION,
-                "",
+                "Vui lòng chờ xác nhận đơn hàng. Link thanh toán sẽ có sau khi đơn hàng được xác nhận.",
                 "",
                 "",
                 dto.getUserId()
@@ -208,12 +208,11 @@ public class OrderService implements IOrderService {
         OrderModel order = orderRepo.findById(dto.getOrderId())
                 .orElseThrow(() -> new EntityNotFoundException("Order not found"));
         long amount = (long) dto.getAmount();
-        Long transactionCode = System.currentTimeMillis() / 1000;
         long expiredAt = Instant.now().getEpochSecond() + 5 * 60;
 
         CreatePaymentLinkRequest paymentData =
                 CreatePaymentLinkRequest.builder()
-                        .orderCode(transactionCode)
+                        .orderCode(Long.parseLong(order.getOrderCode()))
                         .amount(amount)
                         .expiredAt(expiredAt)
                         .description("Thanh toan 3 ngay")
@@ -226,7 +225,7 @@ public class OrderService implements IOrderService {
         // Lưu transaction
         TransactionModel tx = new TransactionModel();
         tx.setOrder(order);
-        tx.setOrderCode(String.valueOf(transactionCode));
+        tx.setOrderCode(order.getOrderCode());
         tx.setAmount(amount);
         tx.setStatus("PENDING");
         tx.setCheckoutUrl(response.getCheckoutUrl());
@@ -238,5 +237,28 @@ public class OrderService implements IOrderService {
 
         orderRepo.save(order);
         return response.getCheckoutUrl();
+    }
+
+    @Transactional
+    @Override
+    public void handlePaymentSuccess(String orderCode) throws Exception {
+        // Tìm transaction theo orderCode
+        TransactionModel tx = txRepo.findByOrderCode(orderCode)
+                .orElseThrow(() -> new EntityNotFoundException("Transaction not found"));
+
+        // Cập nhật trạng thái transaction
+        tx.setStatus("SUCCESS");
+        txRepo.save(tx);
+
+        // Cập nhật delivery step sang PREPARING
+        OrderModel order = tx.getOrder();
+        deliveryStatusService.setCurrentStepCascading(
+                order.getId(),
+                DeliveryStep.PREPARING,
+                "Thanh toán thành công, hệ thống đang chuẩn bị đơn hàng",
+                null,
+                null,
+                order.getUser().getId()
+        );
     }
 }

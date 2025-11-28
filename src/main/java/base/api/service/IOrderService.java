@@ -13,7 +13,7 @@ public interface IOrderService {
     List<OrderModel> getOrdersByUserId(Long userId);
     String checkoutCustomProduct(CheckoutDto dto) throws Exception;
     String addPaymentToOrder(AddTransactionToOrderDto dto) throws Exception;
-
+    void handlePaymentSuccess(String orderCode) throws Exception;
 
 
 }
