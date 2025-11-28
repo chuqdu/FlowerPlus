@@ -47,7 +47,6 @@ public class JwtAuthenticationFilter  extends OncePerRequestFilter {
         boolean isPublic = Arrays.stream(SecurityConfig.PUBLIC_ENDPOINTS)
                 .anyMatch(pattern -> pathMatcher.match(pattern, path));
 
-        // public -> cho qua xử lý luôn
         if (isPublic) {
             filterChain.doFilter(request, response);
             return;
@@ -55,38 +54,42 @@ public class JwtAuthenticationFilter  extends OncePerRequestFilter {
 
         final String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7);
-            try {
-                String username = jwtUtil.extractUsername(token);
-
-                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    var userDetails = userDetailsService.loadUserByUsername(username);
-
-                    if (jwtUtil.isTokenValid(token, userDetails)) {
-                        var auth = new UsernamePasswordAuthenticationToken(
-                                userDetails, null, userDetails.getAuthorities()
-                        );
-                        auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                        SecurityContextHolder.getContext().setAuthentication(auth);
-                    }
-                }
-            } catch (ExpiredJwtException ex) {
-                throw new UnauthorizedException("Token expired", ex);
-            } catch (Exception ex) {
-                throw new RuntimeException("Token processing failed", ex);
-            }
-        }
-        else{
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"message\":\"Missing or invalid Authorization header\"}");
+        if (header == null || !header.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
             return;
         }
 
+        String token = header.substring(7);
+        try {
+            String username = jwtUtil.extractUsername(token);
+
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                var userDetails = userDetailsService.loadUserByUsername(username);
+
+                if (jwtUtil.isTokenValid(token, userDetails)) {
+                    var auth = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities()
+                    );
+                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
+            }
+        } catch (ExpiredJwtException ex) {
+            // Token hết hạn -> trả 401
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"message\":\"Token expired\"}");
+            return;
+        } catch (Exception ex) {
+            // Token lỗi -> trả 401
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"message\":\"Token processing failed\"}");
+            return;
+        }
+
+        // 3. Cho request đi tiếp
         filterChain.doFilter(request, response);
-
-
-
     }
+
 }

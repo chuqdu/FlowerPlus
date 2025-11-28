@@ -30,7 +30,7 @@ public class SecurityConfig {
             "/api/auth/login",
             "/api/auth/login-v2",
             "/order/create-order-v2",
-            "/api/products/get-list-product",
+            "/api/products/**",
             "/auth/forgot-password",
             "/api/categories/tree",
             "/api/auth/register",
