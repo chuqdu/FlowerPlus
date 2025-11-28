@@ -51,8 +51,15 @@ public class CategoryController extends BaseAPIController {
 
 
     @GetMapping("/tree")
-    public ResponseEntity<TFUResponse<List<CategoryNodeDto>>> getTree() {
-        return success(categoryService.getCategoryTree());
+    public ResponseEntity<TFUResponse<List<CategoryNodeDto>>> getTree(
+            @RequestParam(required = false) Boolean isPublic
+    ) {
+        return success(categoryService.getCategoryTree(isPublic));
+    }
+
+    @GetMapping("/tree-all")
+    public ResponseEntity<TFUResponse<List<CategoryNodeDto>>> getTreeAll(@RequestParam Boolean isPublic) {
+        return success(categoryService.getCategoryTree(isPublic));
     }
 
     @GetMapping("get-category-by-id")

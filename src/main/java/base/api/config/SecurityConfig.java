@@ -40,7 +40,7 @@ public class SecurityConfig {
             "/swagger-ui.html",
             "/v3/api-docs/**",
             "/ws/**",
-            "/order/webhook-payos"
+            "/api/orders/webhook-payos"
     };
 
     @Bean

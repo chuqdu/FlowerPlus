@@ -26,4 +26,6 @@ public interface ITransactionRepository  extends JpaRepository<TransactionModel,
 
     @Query(value = "SELECT TO_CHAR(created_at, 'YYYY') as year, SUM(amount) as revenue FROM transaction GROUP BY year ORDER BY year", nativeQuery = true)
     List<Map<String, Object>> getYearlyRevenue();
+
+    Optional<TransactionModel> findByOrderCode(String orderCode);
 }
