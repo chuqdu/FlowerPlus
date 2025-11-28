@@ -21,6 +21,7 @@ public class CategoryModel extends BaseModel {
     private String name;
 
     private String description;
+    public boolean isPublic = true;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")

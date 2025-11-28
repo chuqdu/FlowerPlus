@@ -245,6 +245,9 @@ public class ProductService implements IProductService {
                 preds.add(cb.equal(root.get("isCustom"), custom));
                 preds.add(cb.equal(root.get("userId"), userId));
             }
+            else{
+                preds.add(cb.equal(root.get("isCustom"), false));
+            }
             if (pageableRequest.getKeyword() != null && !pageableRequest.getKeyword().isBlank()) {
                 preds.add(cb.like(cb.lower(root.get("name")),
                         "%" + pageableRequest.getKeyword().toLowerCase() + "%"));

@@ -71,6 +71,16 @@ public class ProductController extends BaseAPIController {
         return successPage(page);
     }
 
+    @GetMapping("get-list-product-view")
+    public ResponseEntity<TFUResponse<PageResponseDTO<ProductResponse>>> getProductsToView(
+            @RequestParam(value = "type", required = false) ProductType type,
+            @RequestParam(value = "active", required = false) Boolean active,
+            PageableRequestDTO pageableRequest) {
+        Page<ProductResponse> page = productService.getProducts(type, active, null, false, 0L,
+                pageableRequest);
+        return successPage(page);
+    }
+
     @GetMapping("get-product-by-id")
     public ResponseEntity<TFUResponse<ProductResponse>> getProductById(@RequestParam Long id) {
         ProductResponse productModel = productService.getProductById(id);
