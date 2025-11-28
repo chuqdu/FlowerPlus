@@ -8,5 +8,6 @@ import lombok.Getter;
 public enum UserRole {
     USER,
     SHOP_OWNER,
-    ADMIN
+    ADMIN,
+    DELIVERY_PERSON;
 }

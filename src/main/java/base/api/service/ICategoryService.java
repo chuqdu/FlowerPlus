@@ -10,4 +10,6 @@ public interface ICategoryService {
     CategoryModel getById(Long id);
     CategoryModel create(CreateCategoryDto dto);
     List<CategoryNodeDto> getCategoryTree();
+    CategoryModel update(CreateCategoryDto dto);
+
 }

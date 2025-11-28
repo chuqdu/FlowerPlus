@@ -33,11 +33,22 @@ public class CategoryController extends BaseAPIController {
         }
     }
 
-//    @PostMapping("create-category-v2")
-//    public ResponseEntity<CategoryModel> createCategoryV2(@RequestBody CreateCategoryDto dto) {
-//        CategoryModel categoryModel = categoryService.create(dto);
-//        return ResponseEntity.ok(categoryModel);
-//    }
+    @PostMapping("/update-category")
+    public ResponseEntity<TFUResponse<CategoryModel>> updateCategory(
+            @RequestBody CreateCategoryDto dto) {
+        try {
+            Long userId = getCurrentUserId();
+            dto.setUserId(userId);
+            CategoryModel categoryModel = categoryService.update(dto);
+            if(categoryModel == null){
+                return badRequest("Không tìm thấy category");
+            }
+            return success(categoryModel);
+        } catch (BadCredentialsException e) {
+            return badRequest("Không tìm thấy category");
+        }
+    }
+
 
     @GetMapping("/tree")
     public ResponseEntity<TFUResponse<List<CategoryNodeDto>>> getTree() {

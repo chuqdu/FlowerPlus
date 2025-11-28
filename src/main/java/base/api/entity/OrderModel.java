@@ -5,8 +5,6 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -29,7 +27,15 @@ public class OrderModel extends BaseModel {
     private String phoneNumber;
     private LocalDateTime requestDeliveryTime;
 
-    private double total;
+    // Thông tin voucher áp dụng
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "voucher_id")
+    private VoucherModel voucher;
+
+    private String voucherCode;
+    private double discountAmount = 0.0;
+
+    private double total; // total = subtotal - discount
 
     @OneToOne(
             mappedBy = "order",
@@ -58,8 +64,12 @@ public class OrderModel extends BaseModel {
         it.setOrder(this);
     }
 
+    public double calcItemsSubtotal() {
+        return items.stream().mapToDouble(OrderItemModel::getLineTotal).sum();
+    }
 
     public void recalcTotal() {
-        this.total = items.stream().mapToDouble(OrderItemModel::getLineTotal).sum();
+        this.total = calcItemsSubtotal() - (discountAmount == 0 ? 0 : discountAmount);
+        if (this.total < 0) this.total = 0;
     }
 }

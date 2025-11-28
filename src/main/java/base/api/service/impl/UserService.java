@@ -4,6 +4,7 @@ import base.api.dto.request.DeliveryAddressDto;
 import base.api.dto.request.RegisterDto;
 import base.api.entity.DeliveryAddressModel;
 import base.api.entity.UserModel;
+import base.api.enums.UserGender;
 import base.api.repository.IDeliveryAddressRepository;
 import base.api.repository.IUserRepository;
 import base.api.service.IUserService;
@@ -50,22 +51,20 @@ public class UserService implements IUserService {
 
     @Override
     public UserModel registerUser(RegisterDto dto) {
-
-        // có tồn tại  user nào trùng user name không
         UserModel user = userRepository.findByUserName(dto.getUserName()).orElse(null);
 
-        // không tồn tại -> xử lý tạo mới
         if(user == null){
         // logic
            UserModel newUser = new UserModel();
            newUser.setUserName(dto.getUserName());
            newUser.setEmail(dto.getEmail());
            newUser.setFirstName(dto.getFirstName());
+           newUser.setPhone(dto.getPhone());
            newUser.setLastName(dto.getLastName());
-            // mã hóa mật khẩu
+           newUser.setRole(dto.getRole());
+           newUser.setGender(UserGender.MALE);
            newUser.setPassword(passwordEncoder.encode(dto.getPassword()));
-
-            return  userRepository.save(newUser);
+           return userRepository.save(newUser);
 
         }
 
@@ -146,6 +145,11 @@ public class UserService implements IUserService {
         }
 
         return true;
+    }
+
+    @Override
+    public List<UserModel> getAllUsers() {
+        return userRepository.findAll();
     }
 
 

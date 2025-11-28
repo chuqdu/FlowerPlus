@@ -14,6 +14,8 @@ import java.util.List;
 @Setter
 @Getter
 public class OrderResponseDto {
+    private String voucherCode;
+    private double discountAmount;
     private UserDto user;
 
     private String orderCode;

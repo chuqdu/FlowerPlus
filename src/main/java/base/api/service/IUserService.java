@@ -4,6 +4,8 @@ import base.api.dto.request.DeliveryAddressDto;
 import base.api.dto.request.RegisterDto;
 import base.api.entity.UserModel;
 
+import java.util.List;
+
 public interface IUserService {
     UserModel createUser(UserModel model);
     UserModel findByUserName(String userName);
@@ -12,4 +14,6 @@ public interface IUserService {
     UserModel registerUser(RegisterDto dto);
     UserModel createUpdateUserAddress(DeliveryAddressDto dto);
     boolean deleteDeliveryAddress(Long id, Long userId);
+    List<UserModel> getAllUsers();
+
 }

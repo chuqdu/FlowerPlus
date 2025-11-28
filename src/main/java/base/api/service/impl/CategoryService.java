@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class CategoryService implements ICategoryService  {
@@ -32,7 +33,9 @@ public class CategoryService implements ICategoryService  {
     @Override
     @Transactional(readOnly = true)
     public List<CategoryNodeDto> getCategoryTree() {
-        List<CategoryModel> all = categoryRepository.findAll();
+        List<CategoryModel> all = categoryRepository.findAll().stream()
+                .filter(CategoryModel::isPublic)
+                .collect(Collectors.toList());
 
         // Map id -> node DTO
         Map<Long, CategoryNodeDto> map = new HashMap<>(all.size());
@@ -62,6 +65,28 @@ public class CategoryService implements ICategoryService  {
         sortTreeByName(roots);
 
         return roots;
+    }
+
+    @Override
+    public CategoryModel update(CreateCategoryDto dto) {
+        CategoryModel model = categoryRepository.findById(dto.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Category not found: " + dto.getId()));
+
+        model.setName(dto.getName());
+        model.setDescription(dto.getDescription());
+        model.setPublic(dto.isPublic);
+
+
+        if (dto.getParentId() != null) {
+            CategoryModel parent = categoryRepository.findById(dto.getParentId())
+                    .orElseThrow(() -> new IllegalArgumentException("Parent category not found: " + dto.getParentId()));
+            model.setParent(parent);
+        } else {
+            model.setParent(null);
+        }
+
+        return categoryRepository.save(model);
+
     }
 
     private void sortTreeByName(List<CategoryNodeDto> nodes) {
