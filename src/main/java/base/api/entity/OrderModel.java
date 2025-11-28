@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,6 +27,7 @@ public class OrderModel extends BaseModel {
     private String note;
     private String shippingAddress;
     private String phoneNumber;
+    private LocalDateTime requestDeliveryTime;
 
     private double total;
 

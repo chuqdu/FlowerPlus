@@ -68,7 +68,7 @@ public class OrderService implements IOrderService {
         OrderModel order = new OrderModel();
         order.setUser(cart.getUser());
         order.setOrderCode(String.valueOf(System.currentTimeMillis() / 1000));
-
+        order.setRequestDeliveryTime(dto.getRequestDeliveryTime());
         order.setShippingAddress(dto.getShippingAddress());
         order.setPhoneNumber(dto.getPhoneNumber());
         order.setNote(dto.getNote());
@@ -143,7 +143,7 @@ public class OrderService implements IOrderService {
         order.setUser(user);
         order.setNote(dto.getNote());
         order.setOrderCode(String.valueOf(System.currentTimeMillis() / 1000));
-
+        order.setRequestDeliveryTime(dto.getRequestDeliveryTime());
         order.setShippingAddress(dto.getShippingAddress());
         order.setPhoneNumber(dto.getPhoneNumber());
         order.addItem(OrderItemModel.of(
@@ -198,6 +198,8 @@ public class OrderService implements IOrderService {
         tx.setPaymentLinkId(response.getPaymentLinkId());
 
         txRepo.save(tx);
+
+        order.setTotal(amount);
 
         orderRepo.save(order);
         return response.getCheckoutUrl();

@@ -6,6 +6,7 @@ import base.api.entity.TransactionModel;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +19,7 @@ public class OrderResponseDto {
     private String orderCode;
 
     private double total;
-
+    private LocalDateTime requestDeliveryTime;
     private TransactionModel transaction;
     private Long id;
 
