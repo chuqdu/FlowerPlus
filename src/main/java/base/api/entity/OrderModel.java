@@ -54,6 +54,10 @@ public class OrderModel extends BaseModel {
     @JsonManagedReference
     private List<DeliveryStatusModel> deliveryStatuses = new ArrayList<>();
 
+    private boolean cancelled = false;
+
+    private LocalDateTime cancelledAt;
+
     public void addDeliveryStatus(DeliveryStatusModel s) {
         this.deliveryStatuses.add(s);
         s.setOrder(this);

@@ -19,6 +19,9 @@ public class TransactionService implements ITransactionService {
     @Autowired
     private ITransactionRepository transactionRepository;
 
+    @Autowired
+    private base.api.service.IDeliveryStatusService deliveryStatusService;
+
     @Override
     public List<TransactionModel> getListTransactions() {
         return transactionRepository.findAllByOrderByCreatedAtDesc();
@@ -59,10 +62,30 @@ public class TransactionService implements ITransactionService {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public TransactionModel updateTransactionStatus(Long transactionId, String status) {
         TransactionModel transaction = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new EntityNotFoundException("Transaction not found"));
+        
+        String oldStatus = transaction.getStatus();
         transaction.setStatus(status);
-        return transactionRepository.save(transaction);
+        TransactionModel savedTransaction = transactionRepository.save(transaction);
+        
+        if ("SUCCESS".equals(status) && !"SUCCESS".equals(oldStatus)) {
+            OrderModel order = transaction.getOrder();
+            if (order != null) {
+                // Cập nhật delivery step sang PREPARING
+                deliveryStatusService.setCurrentStepCascading(
+                        order.getId(),
+                        base.api.enums.DeliveryStep.PREPARING,
+                        "Thanh toán thành công, hệ thống đang chuẩn bị đơn hàng",
+                        null,
+                        null,
+                        order.getUser().getId()
+                );
+            }
+        }
+        
+        return savedTransaction;
     }
 }

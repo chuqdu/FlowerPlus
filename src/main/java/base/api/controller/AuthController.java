@@ -44,10 +44,10 @@ public class AuthController extends BaseAPIController {
             return badRequest("Không tìm thấy user");
         }
 
-        // Kiểm tra email đã xác thực chưa
-        if(!user.isVerified()){
-            return badRequest("Vui lòng xác thực email trước khi đăng nhập. Kiểm tra hộp thư của bạn.");
-        }
+//        // Kiểm tra email đã xác thực chưa
+//        if(!user.isVerified()){
+//            return badRequest("Vui lòng xác thực email trước khi đăng nhập. Kiểm tra hộp thư của bạn.");
+//        }
 
         String jwt = jwtUtil.generateToken(user);
         AuthResponse authResponse = new AuthResponse();
