@@ -1,12 +1,17 @@
 package base.api.service.impl;
 
+import base.api.dto.response.TransactionWithOrderDto;
+import base.api.entity.OrderModel;
 import base.api.entity.TransactionModel;
+import base.api.entity.UserModel;
 import base.api.repository.ITransactionRepository;
 import base.api.service.ITransactionService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class TransactionService implements ITransactionService {
@@ -17,5 +22,47 @@ public class TransactionService implements ITransactionService {
     @Override
     public List<TransactionModel> getListTransactions() {
         return transactionRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    @Override
+    public List<TransactionWithOrderDto> getListTransactionsWithOrderInfo() {
+        List<TransactionModel> transactions = transactionRepository.findAllByOrderByCreatedAtDesc();
+        return transactions.stream().map(tx -> {
+            TransactionWithOrderDto dto = new TransactionWithOrderDto();
+            dto.setId(tx.getId());
+            dto.setOrderCode(tx.getOrderCode());
+            dto.setAmount(tx.getAmount());
+            dto.setStatus(tx.getStatus());
+            dto.setCheckoutUrl(tx.getCheckoutUrl());
+            dto.setPaymentLinkId(tx.getPaymentLinkId());
+            dto.setCreatedAt(tx.getCreatedAt());
+            
+            OrderModel order = tx.getOrder();
+            if (order != null) {
+                dto.setOrderId(order.getId());
+                dto.setShippingAddress(order.getShippingAddress());
+                dto.setPhoneNumber(order.getPhoneNumber());
+                dto.setNote(order.getNote());
+                dto.setRequestDeliveryTime(order.getRequestDeliveryTime());
+                
+                UserModel user = order.getUser();
+                if (user != null) {
+                    dto.setUserId(user.getId());
+                    dto.setUserName(user.getUserName());
+                    dto.setUserEmail(user.getEmail());
+                    dto.setUserPhone(user.getPhone());
+                }
+            }
+            
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    public TransactionModel updateTransactionStatus(Long transactionId, String status) {
+        TransactionModel transaction = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new EntityNotFoundException("Transaction not found"));
+        transaction.setStatus(status);
+        return transactionRepository.save(transaction);
     }
 }

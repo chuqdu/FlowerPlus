@@ -26,7 +26,7 @@ public interface IUserRepository extends JpaRepository<UserModel, Long>, JpaSpec
 
     UserModel findByUserNameAndEmail(String userName, String Email);
 
-    UserModel findByEmail(String email);
+    Optional<UserModel> findByEmail(String email);
 
     @Query("SELECT u FROM UserModel u WHERE u.userName = :login OR u.email = :login")
     Optional<UserModel> findByUserName(@Param("login") String login);

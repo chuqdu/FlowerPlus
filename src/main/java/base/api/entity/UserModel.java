@@ -40,6 +40,8 @@ public class UserModel extends BaseModel {
 
         public boolean isActive = true;
 
+        public boolean isVerified = false;
+
         public String email;
 
         public String password;
