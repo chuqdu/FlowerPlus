@@ -14,6 +14,8 @@ public interface IOrderService {
     String checkoutCustomProduct(CheckoutDto dto) throws Exception;
     String addPaymentToOrder(AddTransactionToOrderDto dto) throws Exception;
     void handlePaymentSuccess(String orderCode) throws Exception;
-
-
+    void cancelOrder(Long orderId, Long userId, String reason) throws Exception;
+    List<base.api.dto.response.RefundRequestDto> getAllRefundRequests();
+    List<base.api.dto.response.RefundRequestDto> getUserRefundRequests(Long userId);
+    void processRefund(Long refundId, Long adminId, base.api.dto.request.ProcessRefundDto dto) throws Exception;
 }

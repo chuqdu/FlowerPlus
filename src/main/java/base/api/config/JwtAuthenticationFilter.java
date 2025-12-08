@@ -81,7 +81,6 @@ public class JwtAuthenticationFilter  extends OncePerRequestFilter {
             response.getWriter().write("{\"message\":\"Token expired\"}");
             return;
         } catch (Exception ex) {
-            // Token lỗi -> trả 401
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write("{\"message\":\"Token processing failed\"}");

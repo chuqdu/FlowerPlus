@@ -5,5 +5,6 @@ public enum DeliveryStep {
     PREPARING,            // đang chuẩn bị
     DELIVERING,           // đang giao
     DELIVERED,            // giao thành công
-    DELIVERY_FAILED       // giao thất bại
+    DELIVERY_FAILED,      // giao thất bại
+    CANCELLED             // đã hủy
 }

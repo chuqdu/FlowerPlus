@@ -44,6 +44,11 @@ public class AuthController extends BaseAPIController {
             return badRequest("Không tìm thấy user");
         }
 
+//        // Kiểm tra email đã xác thực chưa
+//        if(!user.isVerified()){
+//            return badRequest("Vui lòng xác thực email trước khi đăng nhập. Kiểm tra hộp thư của bạn.");
+//        }
+
         String jwt = jwtUtil.generateToken(user);
         AuthResponse authResponse = new AuthResponse();
         authResponse.setAccessToken(jwt);
@@ -94,5 +99,38 @@ public class AuthController extends BaseAPIController {
     public ResponseEntity<TFUResponse<Iterable<UserModel>>> getListUsers(){
         Iterable<UserModel> users = userService.getAllUsers();
         return success(users);
+    }
+
+    @PostMapping("forgot-password/initiate")
+    public ResponseEntity<TFUResponse<base.api.dto.response.InitiateForgotPasswordResponse>> initiateForgotPassword(
+            @RequestBody base.api.dto.request.InitiateForgotPasswordDto dto) {
+        try {
+            base.api.dto.response.InitiateForgotPasswordResponse response = userService.initiateForgotPassword(dto.getContactInfo());
+            return success(response);
+        } catch (Exception e) {
+            return badRequest(e.getMessage());
+        }
+    }
+
+    @PostMapping("forgot-password/complete")
+    public ResponseEntity<TFUResponse<String>> completeForgotPassword(
+            @RequestBody base.api.dto.request.CompleteForgotPasswordDto dto) {
+        try {
+            userService.completeForgotPassword(dto);
+            return success("Đặt lại mật khẩu thành công");
+        } catch (Exception e) {
+            return badRequest(e.getMessage());
+        }
+    }
+
+    @PostMapping("verify-email")
+    public ResponseEntity<TFUResponse<String>> verifyEmail(
+            @RequestBody base.api.dto.request.VerifyEmailDto dto) {
+        try {
+            userService.verifyEmail(dto);
+            return success("Xác thực email thành công");
+        } catch (Exception e) {
+            return badRequest(e.getMessage());
+        }
     }
 }

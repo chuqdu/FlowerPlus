@@ -136,5 +136,45 @@ public class OrderController extends BaseAPIController {
         }
     }
 
+    @PostMapping("/{orderId}/cancel")
+    public ResponseEntity<TFUResponse<String>> cancelOrder(
+            @PathVariable Long orderId,
+            @RequestBody base.api.dto.request.CancelOrderDto dto
+    ) {
+        try {
+            Long userId = getCurrentUserId();
+            orderService.cancelOrder(orderId, userId, dto.getReason());
+            return success("Đơn hàng đã được hủy thành công. Yêu cầu hoàn tiền đang được xử lý.");
+        } catch (Exception e) {
+            return badRequest(e.getMessage());
+        }
+    }
+
+    @GetMapping("/refund-requests")
+    public ResponseEntity<TFUResponse<List<base.api.dto.response.RefundRequestDto>>> getRefundRequests() {
+        List<base.api.dto.response.RefundRequestDto> refunds = orderService.getAllRefundRequests();
+        return success(refunds);
+    }
+
+    @GetMapping("/my-refund-requests")
+    public ResponseEntity<TFUResponse<List<base.api.dto.response.RefundRequestDto>>> getMyRefundRequests() {
+        Long userId = getCurrentUserId();
+        List<base.api.dto.response.RefundRequestDto> refunds = orderService.getUserRefundRequests(userId);
+        return success(refunds);
+    }
+
+    @PostMapping("/refund-requests/{refundId}/process")
+    public ResponseEntity<TFUResponse<String>> processRefund(
+            @PathVariable Long refundId,
+            @RequestBody base.api.dto.request.ProcessRefundDto dto
+    ) {
+        try {
+            Long adminId = getCurrentUserId();
+            orderService.processRefund(refundId, adminId, dto);
+            return success("Xử lý yêu cầu hoàn tiền thành công");
+        } catch (Exception e) {
+            return badRequest(e.getMessage());
+        }
+    }
 
 }
