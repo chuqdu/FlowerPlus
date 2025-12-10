@@ -25,7 +25,8 @@ public class CloudinaryService {
                         "resource_type", "image",
                         "use_filename", true,
                         "unique_filename", false,
-                        "overwrite", true
+                        "overwrite", true,
+                        "invalidate", true
                 )
         );
         return uploadResult.get("secure_url").toString();

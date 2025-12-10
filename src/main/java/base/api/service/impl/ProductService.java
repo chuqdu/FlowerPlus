@@ -9,6 +9,7 @@ import base.api.entity.ProductCategoryModel;
 import base.api.entity.ProductCompositionModel;
 import base.api.entity.ProductModel;
 import base.api.enums.ProductType;
+import base.api.enums.SyncStatus;
 import base.api.repository.ICategoryRepository;
 import base.api.repository.IProductRepository;
 import base.api.service.IProductService;
@@ -54,6 +55,7 @@ public class ProductService implements IProductService {
         product.setProductType(dto.getProductType());
         product.setIsActive(dto.getIsActive() == null ? Boolean.TRUE : dto.getIsActive());
         product.setImages(dto.getImages());
+        product.setSyncStatus(SyncStatus.PENDING); // Set default sync status
 
         switch (dto.getProductType()) {
             case FLOWER:
@@ -164,6 +166,9 @@ public class ProductService implements IProductService {
         if (dto.getImages() != null) {
             existingProduct.setImages(dto.getImages());
         }
+        
+        // Reset sync status when updating
+        existingProduct.setSyncStatus(SyncStatus.PENDING);
 
         if (existingProduct.getProductType() == ProductType.FLOWER || 
             existingProduct.getProductType() == ProductType.ITEM) {
