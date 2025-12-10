@@ -23,6 +23,7 @@ public class ChatbotController extends BaseAPIController {
     @PostMapping("/send-message")
     public ResponseEntity<TFUResponse<ChatResponse>> sendMessage(@RequestBody ChatRequest request) {
         try {
+            request.setUserId(getCurrentUserId());
             ChatResponse response = chatbotService.sendMessage(request);
             return success(response, "Message sent successfully");
         } catch (Exception e) {
@@ -34,7 +35,7 @@ public class ChatbotController extends BaseAPIController {
     public ResponseEntity<TFUResponse<List<ChatHistoryResponse>>> getChatHistory(
             @RequestParam(defaultValue = "1") Long userId) {
         try {
-            List<ChatHistoryResponse> history = chatbotService.getChatHistory(1L);
+            List<ChatHistoryResponse> history = chatbotService.getChatHistory(getCurrentUserId());
             return success(history, "Chat history retrieved successfully");
         } catch (Exception e) {
             return badRequest("Không thể tải lịch sử chat. Vui lòng thử lại sau.");
