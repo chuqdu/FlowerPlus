@@ -1,6 +1,7 @@
 package base.api.entity;
 
 import base.api.enums.ProductType;
+import base.api.enums.SyncStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -23,6 +24,13 @@ public class ProductModel extends BaseModel {
     @Column(name = "user_id")
     private Long userId;
     private boolean isCustom = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sync_status")
+    private SyncStatus syncStatus = SyncStatus.PENDING;
+
+    @Column(name = "product_string", columnDefinition = "TEXT")
+    private String productString;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", insertable = false, updatable = false)

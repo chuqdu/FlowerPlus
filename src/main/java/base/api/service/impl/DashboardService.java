@@ -25,12 +25,26 @@ public class DashboardService implements IDashboardService {
         summaryDto.setTotalUsers(userRepository.count());
         summaryDto.setTotalProducts(productRepository.count());
         summaryDto.setTotalOrders(orderRepository.count());
-        summaryDto.setTotalRevenue(transactionRepository.getTotalRevenue() != null ? transactionRepository.getTotalRevenue() : 0.0);
+        
+        Double totalRevenue = transactionRepository.getTotalRevenue();
+        Double totalRefunded = transactionRepository.getTotalRefunded();
+        summaryDto.setTotalRevenue(totalRevenue != null ? totalRevenue : 0.0);
+        summaryDto.setTotalRefunded(totalRefunded != null ? totalRefunded : 0.0);
+        summaryDto.setNetRevenue((totalRevenue != null ? totalRevenue : 0.0) - (totalRefunded != null ? totalRefunded : 0.0));
 
+        summaryDto.setSuccessfulOrders(orderRepository.countSuccessfulOrders() != null ? orderRepository.countSuccessfulOrders() : 0L);
+        summaryDto.setDeliveringOrders(orderRepository.countDeliveringOrders() != null ? orderRepository.countDeliveringOrders() : 0L);
+        summaryDto.setPendingOrders(orderRepository.countPendingOrders() != null ? orderRepository.countPendingOrders() : 0L);
+        summaryDto.setFailedOrders(orderRepository.countFailedOrders() != null ? orderRepository.countFailedOrders() : 0L);
+        summaryDto.setRefundedOrders(orderRepository.countRefundedOrders() != null ? orderRepository.countRefundedOrders() : 0L);
+
+        summaryDto.setOrderAmountsByStatus(orderRepository.getOrderAmountsByStatus());
         summaryDto.setMonthlyOrders(orderRepository.countMonthlyOrders());
+        summaryDto.setMonthlyOrdersByStatus(orderRepository.getMonthlyOrdersByStatus());
         summaryDto.setYearlyOrders(orderRepository.countYearlyOrders());
         summaryDto.setMonthlyRevenue(transactionRepository.getMonthlyRevenue());
         summaryDto.setYearlyRevenue(transactionRepository.getYearlyRevenue());
+        summaryDto.setTopCustomers(orderRepository.getTopCustomers());
 
         return summaryDto;
     }

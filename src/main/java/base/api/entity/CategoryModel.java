@@ -1,5 +1,6 @@
 package base.api.entity;
 
+import base.api.enums.SyncStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -22,6 +23,10 @@ public class CategoryModel extends BaseModel {
 
     private String description;
     public boolean isPublic = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sync_status")
+    private SyncStatus syncStatus = SyncStatus.PENDING;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")

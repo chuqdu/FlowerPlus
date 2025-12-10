@@ -9,6 +9,7 @@ import base.api.entity.ProductCategoryModel;
 import base.api.entity.ProductCompositionModel;
 import base.api.entity.ProductModel;
 import base.api.enums.ProductType;
+import base.api.enums.SyncStatus;
 import base.api.repository.ICategoryRepository;
 import base.api.repository.IProductRepository;
 import base.api.service.IProductService;
@@ -54,6 +55,7 @@ public class ProductService implements IProductService {
         product.setProductType(dto.getProductType());
         product.setIsActive(dto.getIsActive() == null ? Boolean.TRUE : dto.getIsActive());
         product.setImages(dto.getImages());
+        product.setSyncStatus(SyncStatus.PENDING); // Set default sync status
 
         switch (dto.getProductType()) {
             case FLOWER:
@@ -144,18 +146,90 @@ public class ProductService implements IProductService {
         return productRepository.save(product);
     }
 
+    @Transactional
     @Override
     public ProductModel updateProduct(ProductDto dto) {
-        ProductModel existingProduct = productRepository.findById(dto.getId()).get();
-        if(existingProduct != null){
-            existingProduct.setName(dto.getName());
-            existingProduct.setDescription(dto.getDescription());
-            existingProduct.setPrice(dto.getPrice());
-
-            productRepository.save(existingProduct);
-            return existingProduct;
+        if (dto == null || dto.getId() == null) {
+            throw new IllegalArgumentException("ProductDto and ID are required");
         }
-        return null;
+
+        ProductModel existingProduct = productRepository.findById(dto.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Product not found: " + dto.getId()));
+
+        existingProduct.setName(dto.getName());
+        existingProduct.setDescription(dto.getDescription());
+        existingProduct.setPrice(dto.getPrice());
+        existingProduct.setStock(dto.getStock());
+        if (dto.getIsActive() != null) {
+            existingProduct.setIsActive(dto.getIsActive());
+        }
+        if (dto.getImages() != null) {
+            existingProduct.setImages(dto.getImages());
+        }
+        
+        // Reset sync status when updating
+        existingProduct.setSyncStatus(SyncStatus.PENDING);
+
+        if (existingProduct.getProductType() == ProductType.FLOWER || 
+            existingProduct.getProductType() == ProductType.ITEM) {
+            existingProduct.getProductCategories().clear();
+            
+            if (dto.getCategoryIds() != null && !dto.getCategoryIds().isEmpty()) {
+                List<CategoryModel> categories = categoryRepository.findAllById(dto.getCategoryIds());
+                for (CategoryModel cat : categories) {
+                    ProductCategoryModel pcm = new ProductCategoryModel();
+                    pcm.setProduct(existingProduct);
+                    pcm.setCategory(cat);
+                    existingProduct.getProductCategories().add(pcm);
+                }
+            }
+        }
+
+        if (existingProduct.getProductType() == ProductType.PRODUCT) {
+            existingProduct.getCompositions().clear();
+            existingProduct.getProductCategories().clear();
+            
+            if (dto.getCompositions() != null && !dto.getCompositions().isEmpty()) {
+                Set<CategoryModel> unionCategories = new LinkedHashSet<>();
+                
+                for (ProductCompositionDto compDto : dto.getCompositions()) {
+                    if (compDto == null || compDto.getChildProductId() == null) {
+                        throw new IllegalArgumentException("Child product id is required");
+                    }
+                    
+                    ProductModel child = productRepository.findById(compDto.getChildProductId())
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                    "Child product not found: " + compDto.getChildProductId()));
+
+                    if (child.getProductType() == ProductType.PRODUCT) {
+                        throw new IllegalArgumentException("Child product cannot be a PRODUCT");
+                    }
+
+                    if (child.getProductCategories() != null) {
+                        for (ProductCategoryModel pcm : child.getProductCategories()) {
+                            if (pcm.getCategory() != null) {
+                                unionCategories.add(pcm.getCategory());
+                            }
+                        }
+                    }
+
+                    ProductCompositionModel comp = new ProductCompositionModel();
+                    comp.setParent(existingProduct);
+                    comp.setChild(child);
+                    comp.setQuantity(compDto.getQuantity() == null || compDto.getQuantity() <= 0 ? 1 : compDto.getQuantity());
+                    existingProduct.getCompositions().add(comp);
+                }
+
+                for (CategoryModel cat : unionCategories) {
+                    ProductCategoryModel pcm = new ProductCategoryModel();
+                    pcm.setProduct(existingProduct);
+                    pcm.setCategory(cat);
+                    existingProduct.getProductCategories().add(pcm);
+                }
+            }
+        }
+
+        return productRepository.save(existingProduct);
     }
 
     @Override
@@ -276,6 +350,8 @@ public class ProductService implements IProductService {
         r.setProductType(m.getProductType());
         r.setIsActive(m.getIsActive());
         r.setImages(m.getImages());
+        r.setSyncStatus(m.getSyncStatus());
+        r.setProductString(m.getProductString());
 
         if (m.getProductCategories() != null) {
             r.setCategories(
@@ -299,6 +375,9 @@ public class ProductService implements IProductService {
                             .collect(Collectors.toList())
             );
         }
+
+        r.setCreatedAt(m.getCreatedAt());
+        r.setUpdatedAt(m.getUpdatedAt());
 
         return r;
     }

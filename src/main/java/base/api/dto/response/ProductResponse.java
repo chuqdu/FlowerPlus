@@ -1,9 +1,10 @@
 package base.api.dto.response;
 
 import base.api.enums.ProductType;
+import base.api.enums.SyncStatus;
 import lombok.Data;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -16,13 +17,15 @@ public class ProductResponse {
     private ProductType productType;
     private Boolean isActive;
     private String images;
+    private SyncStatus syncStatus;
+    private String productString;
 
     private List<CategoryLite> categories;
 
     private List<CompositionItem> compositions;
 
-    private Instant createdAt;
-    private Instant updatedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     @Data
     public static class CategoryLite {

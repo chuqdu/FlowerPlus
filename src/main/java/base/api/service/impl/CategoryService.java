@@ -4,6 +4,7 @@ import base.api.dto.request.CategoryNodeDto;
 import base.api.dto.request.CreateCategoryDto;
 import base.api.entity.CategoryModel;
 import base.api.entity.UserModel;
+import base.api.enums.SyncStatus;
 import base.api.repository.ICategoryRepository;
 import base.api.repository.IProductRepository;
 import base.api.repository.IUserRepository;
@@ -48,6 +49,8 @@ public class CategoryService implements ICategoryService  {
             node.setId(c.getId());
             node.setName(c.getName());
             node.setDescription(c.getDescription());
+            node.setPublic(c.isPublic());
+            node.setSyncStatus(c.getSyncStatus());
             node.setParentId(c.getParent() == null ? null : c.getParent().getId());
             map.put(c.getId(), node);
         }
@@ -79,7 +82,9 @@ public class CategoryService implements ICategoryService  {
         model.setName(dto.getName());
         model.setDescription(dto.getDescription());
         model.setPublic(dto.isPublic);
-
+        
+        // Reset sync status when updating
+        model.setSyncStatus(SyncStatus.PENDING);
 
         if (dto.getParentId() != null) {
             CategoryModel parent = categoryRepository.findById(dto.getParentId())
@@ -111,6 +116,8 @@ public class CategoryService implements ICategoryService  {
         model.setName(dto.getName());
         model.setDescription(dto.getDescription());
         model.setUserModel(user);
+        model.setSyncStatus(SyncStatus.PENDING); // Set default sync status
+        
         if (dto.getParentId() != null) {
             CategoryModel parent = categoryRepository.findById(dto.getParentId())
                     .orElseThrow(() -> new IllegalArgumentException("Parent category not found: " + dto.getParentId()));

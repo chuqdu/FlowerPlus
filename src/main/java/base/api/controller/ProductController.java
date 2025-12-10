@@ -25,23 +25,25 @@ public class ProductController extends BaseAPIController {
     private IProductService productService;
 
     @PostMapping("create-product")
-    public ResponseEntity<TFUResponse<ProductModel>> createProduct(@RequestBody ProductDto dto) {
+    public ResponseEntity<TFUResponse<ProductResponse>> createProduct(@RequestBody ProductDto dto) {
         dto.setUserId(getCurrentUserId());
         ProductModel productModel = productService.createProduct(dto);
         if (productModel == null) {
             return badRequest("Không tạo được product");
         }
-        return success(productModel);
+        ProductResponse response = productService.getProductById(productModel.getId());
+        return success(response);
     }
 
     @PutMapping("update-product")
-    public ResponseEntity<TFUResponse<ProductModel>> updateProduct(@RequestBody ProductDto dto) {
+    public ResponseEntity<TFUResponse<ProductResponse>> updateProduct(@RequestBody ProductDto dto) {
         dto.setUserId(getCurrentUserId());
         ProductModel productModel = productService.updateProduct(dto);
         if (productModel == null) {
             return badRequest("Không tìm thấy product");
         }
-        return success(productModel);
+        ProductResponse response = productService.getProductById(productModel.getId());
+        return success(response);
     }
 
     @GetMapping("get-list-product")
