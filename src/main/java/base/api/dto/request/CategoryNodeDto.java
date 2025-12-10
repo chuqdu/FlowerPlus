@@ -11,5 +11,6 @@ public class CategoryNodeDto {
     private String name;
     private String description;
     private Long parentId;
+    public boolean isPublic;
     private List<CategoryNodeDto> children = new ArrayList<>();
 }
