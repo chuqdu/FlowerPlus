@@ -9,4 +9,5 @@ public interface ISyncService {
     boolean syncCategory(SyncCategoryRequest request);
     boolean syncProduct(SyncProductRequest request);
     String generateProductString(Long productId);
+    base.api.dto.response.SyncStatsResponse getSyncStats();
 }

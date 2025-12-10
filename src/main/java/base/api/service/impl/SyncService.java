@@ -47,10 +47,18 @@ public class SyncService implements ISyncService {
     public void syncCategoryBatch() {
         log.info("Starting category batch sync...");
         
-        List<CategoryModel> pendingCategories = categoryRepository.findBySyncStatusOrderByUpdatedAtAsc(
-            SyncStatus.PENDING, 
+        // Get PENDING records and FAILED records that haven't been updated in last 5 minutes
+        List<CategoryModel> pendingCategories = categoryRepository.findBySyncStatusInOrderByUpdatedAtAsc(
+            List.of(SyncStatus.PENDING, SyncStatus.FAILED), 
             org.springframework.data.domain.PageRequest.of(0, batchSize)
         );
+        
+        // Filter out recently failed records to avoid spam retry (30 seconds)
+        java.time.LocalDateTime thirtySecondsAgo = java.time.LocalDateTime.now().minusSeconds(30);
+        pendingCategories = pendingCategories.stream()
+            .filter(cat -> cat.getSyncStatus() == SyncStatus.PENDING || 
+                          cat.getUpdatedAt().isBefore(thirtySecondsAgo))
+            .collect(java.util.stream.Collectors.toList());
 
         for (CategoryModel category : pendingCategories) {
             try {
@@ -62,6 +70,9 @@ public class SyncService implements ISyncService {
                 SyncCategoryRequest request = new SyncCategoryRequest();
                 request.setCategory_id(category.getId());
                 request.setCategory_name(category.getName());
+
+                // Log payload before sending
+                log.info("Syncing category payload: {}", request);
 
                 // Sync
                 boolean success = syncCategory(request);
@@ -88,10 +99,18 @@ public class SyncService implements ISyncService {
     public void syncProductBatch() {
         log.info("Starting product batch sync...");
         
-        List<ProductModel> pendingProducts = productRepository.findBySyncStatusOrderByUpdatedAtAsc(
-            SyncStatus.PENDING, 
+        // Get PENDING records and FAILED records that haven't been updated in last 5 minutes
+        List<ProductModel> pendingProducts = productRepository.findBySyncStatusInOrderByUpdatedAtAsc(
+            List.of(SyncStatus.PENDING, SyncStatus.FAILED), 
             org.springframework.data.domain.PageRequest.of(0, batchSize)
         );
+        
+        // Filter out recently failed records to avoid spam retry (30 seconds)
+        java.time.LocalDateTime thirtySecondsAgo = java.time.LocalDateTime.now().minusSeconds(30);
+        pendingProducts = pendingProducts.stream()
+            .filter(prod -> prod.getSyncStatus() == SyncStatus.PENDING || 
+                           prod.getUpdatedAt().isBefore(thirtySecondsAgo))
+            .collect(java.util.stream.Collectors.toList());
 
         for (ProductModel product : pendingProducts) {
             try {
@@ -106,9 +125,15 @@ public class SyncService implements ISyncService {
                     productRepository.save(product);
                 }
 
-                // Get primary category
-                Long categoryId = product.getProductCategories().isEmpty() ? 
-                    null : product.getProductCategories().get(0).getCategory().getId();
+                // Get primary category (first category in the list)
+                Long categoryId = null;
+                if (!product.getProductCategories().isEmpty()) {
+                    categoryId = product.getProductCategories().get(0).getCategory().getId();
+                    log.info("Product {} has {} categories, using primary category: {}", 
+                        product.getId(), product.getProductCategories().size(), categoryId);
+                } else {
+                    log.warn("Product {} has no categories assigned", product.getId());
+                }
 
                 // Prepare sync request
                 SyncProductRequest request = new SyncProductRequest();
@@ -117,6 +142,9 @@ public class SyncService implements ISyncService {
                 request.setPrice(product.getPrice());
                 request.setCategory_id(categoryId);
                 request.setProduct_string(product.getProductString());
+
+                // Log payload before sending
+                log.info("Syncing product payload: {}", request);
 
                 // Sync
                 boolean success = syncProduct(request);
@@ -225,5 +253,32 @@ public class SyncService implements ISyncService {
         }
 
         return productString.toString();
+    }
+
+    @Override
+    public base.api.dto.response.SyncStatsResponse getSyncStats() {
+        base.api.dto.response.SyncStatsResponse stats = new base.api.dto.response.SyncStatsResponse();
+        
+        // Category stats
+        base.api.dto.response.SyncStatsResponse.CategoryStats categoryStats = 
+            new base.api.dto.response.SyncStatsResponse.CategoryStats();
+        categoryStats.setTotal(categoryRepository.count());
+        categoryStats.setPending(categoryRepository.countBySyncStatus(SyncStatus.PENDING));
+        categoryStats.setSyncing(categoryRepository.countBySyncStatus(SyncStatus.SYNCING));
+        categoryStats.setSynced(categoryRepository.countBySyncStatus(SyncStatus.SYNCED));
+        categoryStats.setFailed(categoryRepository.countBySyncStatus(SyncStatus.FAILED));
+        stats.setCategories(categoryStats);
+        
+        // Product stats
+        base.api.dto.response.SyncStatsResponse.ProductStats productStats = 
+            new base.api.dto.response.SyncStatsResponse.ProductStats();
+        productStats.setTotal(productRepository.count());
+        productStats.setPending(productRepository.countBySyncStatus(SyncStatus.PENDING));
+        productStats.setSyncing(productRepository.countBySyncStatus(SyncStatus.SYNCING));
+        productStats.setSynced(productRepository.countBySyncStatus(SyncStatus.SYNCED));
+        productStats.setFailed(productRepository.countBySyncStatus(SyncStatus.FAILED));
+        stats.setProducts(productStats);
+        
+        return stats;
     }
 }

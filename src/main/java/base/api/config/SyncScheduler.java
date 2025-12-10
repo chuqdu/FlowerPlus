@@ -15,8 +15,8 @@ public class SyncScheduler {
 
     private final ISyncService syncService;
 
-    // Chạy sync category mỗi 5 phút
-    @Scheduled(fixedRate = 300000) // 5 minutes
+    // Chạy sync category mỗi 30 giây
+    @Scheduled(fixedRate = 30000) // 30 seconds
     public void syncCategories() {
         log.info("Starting scheduled category sync...");
         try {
@@ -26,8 +26,8 @@ public class SyncScheduler {
         }
     }
 
-    // Chạy sync product mỗi 10 phút
-    @Scheduled(fixedRate = 600000) // 10 minutes
+    // Chạy sync product mỗi 30 giây
+    @Scheduled(fixedRate = 30000) // 30 seconds
     public void syncProducts() {
         log.info("Starting scheduled product sync...");
         try {

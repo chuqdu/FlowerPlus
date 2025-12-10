@@ -50,6 +50,7 @@ public class CategoryService implements ICategoryService  {
             node.setName(c.getName());
             node.setDescription(c.getDescription());
             node.setPublic(c.isPublic());
+            node.setSyncStatus(c.getSyncStatus());
             node.setParentId(c.getParent() == null ? null : c.getParent().getId());
             map.put(c.getId(), node);
         }

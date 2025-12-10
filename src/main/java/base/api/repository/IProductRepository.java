@@ -12,4 +12,7 @@ import java.util.List;
 @Repository
 public interface IProductRepository extends JpaRepository<ProductModel, Long>, JpaSpecificationExecutor<ProductModel> {
     List<ProductModel> findBySyncStatusOrderByUpdatedAtAsc(SyncStatus syncStatus, Pageable pageable);
+    List<ProductModel> findBySyncStatusInOrderByUpdatedAtAsc(List<SyncStatus> syncStatuses, Pageable pageable);
+    List<ProductModel> findBySyncStatusIsNullOrProductStringIsNull();
+    long countBySyncStatus(SyncStatus syncStatus);
 }

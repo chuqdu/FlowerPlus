@@ -12,4 +12,7 @@ import java.util.List;
 @Repository
 public interface ICategoryRepository extends JpaRepository<CategoryModel, Long>, JpaSpecificationExecutor<CategoryModel> {
     List<CategoryModel> findBySyncStatusOrderByUpdatedAtAsc(SyncStatus syncStatus, Pageable pageable);
+    List<CategoryModel> findBySyncStatusInOrderByUpdatedAtAsc(List<SyncStatus> syncStatuses, Pageable pageable);
+    List<CategoryModel> findBySyncStatusIsNull();
+    long countBySyncStatus(SyncStatus syncStatus);
 }

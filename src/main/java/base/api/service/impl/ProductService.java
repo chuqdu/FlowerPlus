@@ -350,6 +350,8 @@ public class ProductService implements IProductService {
         r.setProductType(m.getProductType());
         r.setIsActive(m.getIsActive());
         r.setImages(m.getImages());
+        r.setSyncStatus(m.getSyncStatus());
+        r.setProductString(m.getProductString());
 
         if (m.getProductCategories() != null) {
             r.setCategories(
@@ -373,6 +375,9 @@ public class ProductService implements IProductService {
                             .collect(Collectors.toList())
             );
         }
+
+        r.setCreatedAt(m.getCreatedAt());
+        r.setUpdatedAt(m.getUpdatedAt());
 
         return r;
     }

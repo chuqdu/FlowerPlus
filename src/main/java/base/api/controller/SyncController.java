@@ -53,4 +53,14 @@ public class SyncController extends BaseAPIController {
             return badRequest("Failed to generate product string: " + e.getMessage());
         }
     }
+
+    @GetMapping("/stats")
+    public ResponseEntity<?> getSyncStats() {
+        try {
+            base.api.dto.response.SyncStatsResponse stats = syncService.getSyncStats();
+            return success(stats);
+        } catch (Exception e) {
+            return badRequest("Failed to get sync stats: " + e.getMessage());
+        }
+    }
 }
