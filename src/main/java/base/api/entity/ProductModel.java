@@ -15,7 +15,10 @@ import java.util.List;
 @Data
 public class ProductModel extends BaseModel {
     private String name;
+    
+    @Column(columnDefinition = "TEXT")
     private String description;
+    
     private double price;
     private Integer stock;
     private ProductType productType;
