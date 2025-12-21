@@ -96,4 +96,7 @@ public interface ProductFavoriteRepository extends JpaRepository<ProductFavorite
            "WHERE pf.userId = :userId AND p.isActive = true " +
            "ORDER BY pf.createdAt DESC")
     List<ProductFavoriteModel> getRecentFavorites(@Param("userId") Long userId, Pageable pageable);
+
+    Long countByUserIdAndProductId(Long userId, Long productId);
+
 }
