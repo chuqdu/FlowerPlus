@@ -15,6 +15,8 @@ import org.springframework.security.core.parameters.P;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 import vn.payos.PayOS;
+import vn.payos.model.v2.paymentRequests.PaymentLink;
+import vn.payos.model.v2.paymentRequests.invoices.InvoicesInfo;
 import vn.payos.model.webhooks.Webhook;
 import vn.payos.model.webhooks.WebhookData;
 
@@ -138,11 +140,16 @@ public class OrderController extends BaseAPIController {
         try{
             ObjectMapper objectMapper = new ObjectMapper();
             Webhook webhook = objectMapper.readValue(rawJson, Webhook.class);
-//            WebhookData data = payOS.webhooks().verify(webhook);
-            WebhookData data = webhook.getData();
+            WebhookData data = payOS.webhooks().verify(webhook);
+//            WebhookData data = webhook.getData();
+
             if ("00".equals(data.getCode())) {
                 String orderCode = String.valueOf(data.getOrderCode());
-                orderService.handlePaymentSuccess(orderCode);
+                // Lấy thông tin thanh toán từ PayOS -> chủ động gọi lại -> đây có gọi là cơ chế polling để đảm bảo giao dịch sẽ luôn đúng (ko bị fake data)
+                PaymentLink paymentInfo = payOS.paymentRequests().get(data.getOrderCode());
+                if ("PAID".equals(paymentInfo.getStatus())) {
+                    orderService.handlePaymentSuccess(String.valueOf(orderCode));
+                }
             }
             return success(data.getCode());
         }
