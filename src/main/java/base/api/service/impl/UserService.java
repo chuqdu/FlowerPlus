@@ -64,12 +64,12 @@ public class UserService implements IUserService {
         // Kiểm tra username đã tồn tại
         UserModel existingUser = userRepository.findByUserName(dto.getUserName()).orElse(null);
         if(existingUser != null){
-            return null;
+            throw new IllegalArgumentException("Username đã tồn tại");
         }
 
         // Kiểm tra email đã tồn tại
         if(userRepository.existsByEmail(dto.getEmail())){
-            return null;
+            throw new IllegalArgumentException("Email đã được sử dụng");
         }
 
         // Tạo user mới

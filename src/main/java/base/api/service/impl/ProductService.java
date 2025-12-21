@@ -94,26 +94,35 @@ public class ProductService implements IProductService {
                 // Lưu product để có id cho liên kết
                 product = productRepository.save(product);
 
-                // Union categories của các child
+                // Bước 1: Lấy các sản phẩm con
+                // Bước 2: Lấy ra các danh mục của sản phẩm con đó
+                // Bước 3: Tập hợp lại để làm danh mục cho sản phẩm cha
                 Set<CategoryModel> unionCategories = new LinkedHashSet<>();
 
                 for (ProductCompositionDto compDto : dto.getCompositions()) {
                     if (compDto == null || compDto.getChildProductId() == null) {
                         throw new IllegalArgumentException("Child product id is required");
                     }
-                    ProductModel child = productRepository.findById(compDto.getChildProductId())
-                            .orElseThrow(() -> new IllegalArgumentException(
-                                    "Child product not found: " + compDto.getChildProductId()));
+                    
+                    // Bước 1: Lấy sản phẩm con với đầy đủ categories
+                    ProductModel child = productRepository.findByIdWithCategories(compDto.getChildProductId())
+                            .orElse(productRepository.findById(compDto.getChildProductId())
+                                    .orElseThrow(() -> new IllegalArgumentException(
+                                            "Child product not found: " + compDto.getChildProductId())));
 
                     // Không cho phép product lồng nhau
                     if (child.getProductType() == ProductType.PRODUCT) {
                         throw new IllegalArgumentException("Child product cannot be a PRODUCT (no nested combos)");
                     }
 
-                    // Gom category của child
-                    if (child.getProductCategories() != null) {
+                    // Bước 2: Lấy ra các danh mục của sản phẩm con
+                    if (child.getProductCategories() != null && !child.getProductCategories().isEmpty()) {
                         for (ProductCategoryModel pcm : child.getProductCategories()) {
-                            if (pcm.getCategory() != null) unionCategories.add(pcm.getCategory());
+                            CategoryModel category = pcm.getCategory();
+                            if (category != null) {
+                                // Bước 3: Tập hợp lại (Set tự động loại bỏ duplicate)
+                                unionCategories.add(category);
+                            }
                         }
                     }
 
@@ -127,7 +136,7 @@ public class ProductService implements IProductService {
                     product.getCompositions().add(comp);
                 }
 
-                // Gán category cho combo = union của các child
+                // Bước 3: Gán tất cả categories đã tập hợp cho sản phẩm cha
                 for (CategoryModel cat : unionCategories) {
                     ProductCategoryModel pcm = new ProductCategoryModel();
                     pcm.setProduct(product);
@@ -190,6 +199,9 @@ public class ProductService implements IProductService {
             existingProduct.getProductCategories().clear();
             
             if (dto.getCompositions() != null && !dto.getCompositions().isEmpty()) {
+                // Bước 1: Lấy các sản phẩm con
+                // Bước 2: Lấy ra các danh mục của sản phẩm con đó
+                // Bước 3: Tập hợp lại để làm danh mục cho sản phẩm cha
                 Set<CategoryModel> unionCategories = new LinkedHashSet<>();
                 
                 for (ProductCompositionDto compDto : dto.getCompositions()) {
@@ -197,22 +209,28 @@ public class ProductService implements IProductService {
                         throw new IllegalArgumentException("Child product id is required");
                     }
                     
-                    ProductModel child = productRepository.findById(compDto.getChildProductId())
-                            .orElseThrow(() -> new IllegalArgumentException(
-                                    "Child product not found: " + compDto.getChildProductId()));
+                    // Bước 1: Lấy sản phẩm con với đầy đủ categories
+                    ProductModel child = productRepository.findByIdWithCategories(compDto.getChildProductId())
+                            .orElse(productRepository.findById(compDto.getChildProductId())
+                                    .orElseThrow(() -> new IllegalArgumentException(
+                                            "Child product not found: " + compDto.getChildProductId())));
 
                     if (child.getProductType() == ProductType.PRODUCT) {
                         throw new IllegalArgumentException("Child product cannot be a PRODUCT");
                     }
 
-                    if (child.getProductCategories() != null) {
+                    // Bước 2: Lấy ra các danh mục của sản phẩm con
+                    if (child.getProductCategories() != null && !child.getProductCategories().isEmpty()) {
                         for (ProductCategoryModel pcm : child.getProductCategories()) {
-                            if (pcm.getCategory() != null) {
-                                unionCategories.add(pcm.getCategory());
+                            CategoryModel category = pcm.getCategory();
+                            if (category != null) {
+                                // Bước 3: Tập hợp lại (Set tự động loại bỏ duplicate)
+                                unionCategories.add(category);
                             }
                         }
                     }
 
+                    // Tạo dòng composition
                     ProductCompositionModel comp = new ProductCompositionModel();
                     comp.setParent(existingProduct);
                     comp.setChild(child);
@@ -220,6 +238,7 @@ public class ProductService implements IProductService {
                     existingProduct.getCompositions().add(comp);
                 }
 
+                // Bước 3: Gán tất cả categories đã tập hợp cho sản phẩm cha
                 for (CategoryModel cat : unionCategories) {
                     ProductCategoryModel pcm = new ProductCategoryModel();
                     pcm.setProduct(existingProduct);
@@ -261,6 +280,10 @@ public class ProductService implements IProductService {
         }
 
         product = productRepository.save(product);
+        
+        // Bước 1: Lấy các sản phẩm con
+        // Bước 2: Lấy ra các danh mục của sản phẩm con đó
+        // Bước 3: Tập hợp lại để làm danh mục cho sản phẩm cha
         Set<CategoryModel> unionCategories = new LinkedHashSet<>();
 
         for (ProductCompositionDto compDto : dto.getCompositions()) {
@@ -268,17 +291,24 @@ public class ProductService implements IProductService {
                 throw new IllegalArgumentException("Child product id is required");
             }
 
-            ProductModel child = productRepository.findById(compDto.getChildProductId())
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Child product not found: " + compDto.getChildProductId()));
+            // Bước 1: Lấy sản phẩm con với đầy đủ categories
+            ProductModel child = productRepository.findByIdWithCategories(compDto.getChildProductId())
+                    .orElse(productRepository.findById(compDto.getChildProductId())
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                    "Child product not found: " + compDto.getChildProductId())));
 
             if (child.getProductType() == ProductType.PRODUCT) {
                 throw new IllegalArgumentException("Child product cannot be a PRODUCT (no nested combos)");
             }
 
-            if (child.getProductCategories() != null) {
+            // Bước 2: Lấy ra các danh mục của sản phẩm con
+            if (child.getProductCategories() != null && !child.getProductCategories().isEmpty()) {
                 for (ProductCategoryModel pcm : child.getProductCategories()) {
-                    if (pcm.getCategory() != null) unionCategories.add(pcm.getCategory());
+                    CategoryModel category = pcm.getCategory();
+                    if (category != null) {
+                        // Bước 3: Tập hợp lại (Set tự động loại bỏ duplicate)
+                        unionCategories.add(category);
+                    }
                 }
             }
 
@@ -291,6 +321,7 @@ public class ProductService implements IProductService {
             product.getCompositions().add(comp);
         }
 
+        // Bước 3: Gán tất cả categories đã tập hợp cho sản phẩm cha
         for (CategoryModel cat : unionCategories) {
             ProductCategoryModel pcm = new ProductCategoryModel();
             pcm.setProduct(product);
@@ -353,11 +384,17 @@ public class ProductService implements IProductService {
         r.setSyncStatus(m.getSyncStatus());
         r.setProductString(m.getProductString());
 
-        if (m.getProductCategories() != null) {
+        if (m.getProductType() == ProductType.PRODUCT) {
+            // Query trực tiếp categories từ child products từ database
+            // Đảm bảo lấy tất cả categories từ tất cả child products
+            List<CategoryModel> childCategories = productRepository.findCategoriesByChildProducts(m.getId());
+            
+            // Convert to Set để loại bỏ duplicate, sau đó convert to List
+            Set<CategoryModel> unionCategories = new LinkedHashSet<>(childCategories);
+            
+            // Convert Set to List
             r.setCategories(
-                    m.getProductCategories().stream()
-                            .map(ProductCategoryModel::getCategory)
-                            .filter(Objects::nonNull)
+                    unionCategories.stream()
                             .map(c -> {
                                 ProductResponse.CategoryLite dto = new ProductResponse.CategoryLite();
                                 dto.setId(c.getId());
@@ -366,6 +403,22 @@ public class ProductService implements IProductService {
                             })
                             .collect(Collectors.toList())
             );
+        } else {
+            // FLOWER/ITEM: lấy categories từ productCategories
+            if (m.getProductCategories() != null) {
+                r.setCategories(
+                        m.getProductCategories().stream()
+                                .map(ProductCategoryModel::getCategory)
+                                .filter(Objects::nonNull)
+                                .map(c -> {
+                                    ProductResponse.CategoryLite dto = new ProductResponse.CategoryLite();
+                                    dto.setId(c.getId());
+                                    dto.setName(c.getName());
+                                    return dto;
+                                })
+                                .collect(Collectors.toList())
+                );
+            }
         }
 
         if (m.getProductType() == ProductType.PRODUCT && m.getCompositions() != null) {

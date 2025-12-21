@@ -44,11 +44,6 @@ public class AuthController extends BaseAPIController {
             return badRequest("Không tìm thấy user");
         }
 
-//        // Kiểm tra email đã xác thực chưa
-//        if(!user.isVerified()){
-//            return badRequest("Vui lòng xác thực email trước khi đăng nhập. Kiểm tra hộp thư của bạn.");
-//        }
-
         String jwt = jwtUtil.generateToken(user);
         AuthResponse authResponse = new AuthResponse();
         authResponse.setAccessToken(jwt);
@@ -57,11 +52,16 @@ public class AuthController extends BaseAPIController {
 
     @PostMapping("register")
     public ResponseEntity<TFUResponse<UserModel>> register(@RequestBody RegisterDto dto){
-        UserModel user = userService.registerUser(dto);
-        if(user == null ){
-            return badRequest("Không tạo được user");
-        }
-        return success(user);
+       try{
+           UserModel user = userService.registerUser(dto);
+           if(user == null ){
+               return badRequest("Không tạo được user");
+           }
+           return success(user);
+       }
+         catch (Exception e){
+              return badRequest(e.getMessage());
+         }
     }
 
 
@@ -73,6 +73,7 @@ public class AuthController extends BaseAPIController {
         }
         return success(user);
     }
+
     @GetMapping("me")
     public ResponseEntity<TFUResponse<UserDto>> getUserInfo(){
         UserModel user = userService.findById(getCurrentUserId());

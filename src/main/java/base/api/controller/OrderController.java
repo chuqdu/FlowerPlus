@@ -135,6 +135,10 @@ public class OrderController extends BaseAPIController {
         }
     }
 
+    /// Làm sao để khi người dùng tt thành công thì hệ thống biết -> webhook
+    /// Làm sao để đảm bảo là webhook sẽ luôn đáng tin cậy
+    /// Khi check-sum key nó bị lộ thì sao. Payos -> trả về cho mình -> mình gọi thẳng lại cho payos để hỏi
+
     @PostMapping("/webhook-payos")
     public ResponseEntity<TFUResponse<String>> handleWebhook(@RequestBody String rawJson){
         try{
