@@ -1,21 +1,28 @@
 package base.api.service.impl;
 
 import base.api.dto.request.ChatRequest;
+import base.api.dto.request.ChatbotApiRequest;
 import base.api.dto.response.ChatResponse;
 import base.api.dto.response.ChatHistoryResponse;
 import base.api.service.IChatbotService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.List;
 import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ChatbotService implements IChatbotService {
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -24,19 +31,35 @@ public class ChatbotService implements IChatbotService {
     @Override
     public ChatResponse sendMessage(ChatRequest request) {
         try {
-            StringBuilder urlBuilder = new StringBuilder("https://good-fun.org/?query=");
-            urlBuilder.append(java.net.URLEncoder.encode(request.getMessage(), "UTF-8"));
+            String url = "https://good-fun.org/";
             
-            // Add user_id parameter (default to 1)
-            urlBuilder.append("&user_id=").append(request.getUserId() != null ? request.getUserId() : 1);
+            // Generate session_id (you can implement your own logic)
+            String sessionId = "session_" + System.currentTimeMillis();
             
-            // Add image_url parameter if provided
-            if (request.getImageUrl() != null && !request.getImageUrl().trim().isEmpty()) {
-                urlBuilder.append("&image_url=").append(java.net.URLEncoder.encode(request.getImageUrl(), "UTF-8"));
-            }
+            // Create request DTO
+            ChatbotApiRequest apiRequest = new ChatbotApiRequest(
+                request.getMessage(),
+                request.getUserId() != null ? request.getUserId().toString() : "1",
+                sessionId,
+                request.getImageUrl()
+            );
             
-            String url = urlBuilder.toString();
-            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+            // Set headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            
+            // Create HTTP entity
+            HttpEntity<ChatbotApiRequest> entity = new HttpEntity<>(apiRequest, headers);
+            
+            // Log request for debugging
+            log.info("Sending chatbot request to: {}", url);
+            log.info("Request body: {}", objectMapper.writeValueAsString(apiRequest));
+            
+            // Send POST request
+            ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+            
+            log.info("Chatbot response status: {}", response.getStatusCode());
+            log.info("Chatbot response body: {}", response.getBody());
             
             if (response.getStatusCode().is2xxSuccessful()) {
                 JsonNode jsonNode = objectMapper.readTree(response.getBody());
@@ -46,7 +69,7 @@ public class ChatbotService implements IChatbotService {
                 return new ChatResponse("Xin lỗi, tôi không thể trả lời câu hỏi này lúc này.");
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error calling chatbot API: {}", e.getMessage(), e);
             return new ChatResponse("Xin lỗi, có lỗi xảy ra. Vui lòng thử lại sau.");
         }
     }

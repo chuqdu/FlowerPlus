@@ -80,6 +80,7 @@ public class OrderService implements IOrderService {
         order.setRequestDeliveryTime(dto.getRequestDeliveryTime());
         order.setShippingAddress(dto.getShippingAddress());
         order.setPhoneNumber(dto.getPhoneNumber());
+        order.setRecipientName(dto.getRecipientName());
         order.setNote(dto.getNote());
 
         for (CartItemModel ci : cart.getCartItems()) {
@@ -168,6 +169,7 @@ public class OrderService implements IOrderService {
         order.setRequestDeliveryTime(dto.getRequestDeliveryTime());
         order.setShippingAddress(dto.getShippingAddress());
         order.setPhoneNumber(dto.getPhoneNumber());
+        order.setRecipientName(dto.getRecipientName());
         order.addItem(OrderItemModel.of(
                 product.getId(),
                 product.getName(),
@@ -266,6 +268,21 @@ public class OrderService implements IOrderService {
                 null,
                 order.getUser().getId()
         );
+
+        // Giảm số lượng hàng hóa (stock) khi thanh toán thành công
+        for (OrderItemModel orderItem : order.getItems()) {
+            ProductModel product = productRepository.findById(orderItem.getProductId())
+                    .orElse(null);
+            
+            if (product != null && product.getStock() != null) {
+                int newStock = product.getStock() - orderItem.getQuantity();
+                if (newStock < 0) {
+                    newStock = 0; // Đảm bảo stock không âm
+                }
+                product.setStock(newStock);
+                productRepository.save(product);
+            }
+        }
     }
 
     @Transactional

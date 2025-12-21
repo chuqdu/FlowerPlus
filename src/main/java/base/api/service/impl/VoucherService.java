@@ -8,10 +8,12 @@ import base.api.dto.response.VoucherResponseDto;
 import base.api.entity.CartItemModel;
 import base.api.entity.CartModel;
 import base.api.entity.ProductModel;
+import base.api.entity.UserVoucherModel;
 import base.api.entity.VoucherModel;
 import base.api.enums.VoucherType;
 import base.api.repository.ICartRepository;
 import base.api.repository.IProductRepository;
+import base.api.repository.IUserVoucherRepository;
 import base.api.repository.IVoucherRepository;
 import base.api.service.IVoucherService;
 import jakarta.persistence.EntityNotFoundException;
@@ -33,6 +35,10 @@ public class VoucherService implements IVoucherService {
     private IProductRepository productRepo;
     @Autowired
     private ICartRepository cartRepo;
+    @Autowired
+    private IUserVoucherRepository userVoucherRepo;
+    @Autowired
+    private base.api.service.INotificationService notificationService;
     @Autowired
     private ModelMapper mapper;
 
@@ -148,6 +154,72 @@ public class VoucherService implements IVoucherService {
             return resp;
         }
         VoucherModel v = opt.get();
+        return validateVoucherLogic(v, items);
+    }
+
+    @Override
+    public ValidateVoucherResponse validateForCart(Long userId, String code) {
+        CartModel cart = cartRepo.findByUser_Id(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Cart not found"));
+        List<ValidateVoucherRequestItem> items = cart.getCartItems().stream().map(ci -> {
+            ValidateVoucherRequestItem x = new ValidateVoucherRequestItem();
+            x.setProductId(ci.getProductId());
+            x.setUnitPrice(ci.getUnitPrice());
+            x.setQuantity(ci.getQuantity());
+            return x;
+        }).toList();
+        return validateForItems(code, items);
+    }
+
+    @Override
+    public ValidateVoucherResponse validatePersonalVoucher(Long userId, String code, List<ValidateVoucherRequestItem> items) {
+        ValidateVoucherResponse resp = new ValidateVoucherResponse();
+        
+        // First check if this is a personal voucher for the user
+        Optional<UserVoucherModel> userVoucherOpt = userVoucherRepo.findByVoucherCodeAndUserId(code, userId);
+        if (userVoucherOpt.isEmpty()) {
+            // Not a personal voucher for this user, try regular voucher validation
+            return validateForItems(code, items);
+        }
+        
+        UserVoucherModel userVoucher = userVoucherOpt.get();
+        VoucherModel voucher = userVoucher.getVoucher();
+        
+        // Check if personal voucher is already used
+        if (userVoucher.getIsUsed()) {
+            resp.setValid(false);
+            resp.setMessage("Voucher cá nhân đã được sử dụng");
+            return resp;
+        }
+        
+        // Use the existing validation logic but with ownership check
+        resp = validateVoucherLogic(voucher, items);
+        
+        // If validation passes, mark it as personal voucher
+        if (resp.isValid()) {
+            resp.setMessage("Voucher cá nhân hợp lệ");
+        }
+        
+        return resp;
+    }
+
+    @Override
+    public ValidateVoucherResponse validatePersonalVoucherForCart(Long userId, String code) {
+        CartModel cart = cartRepo.findByUser_Id(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Cart not found"));
+        List<ValidateVoucherRequestItem> items = cart.getCartItems().stream().map(ci -> {
+            ValidateVoucherRequestItem x = new ValidateVoucherRequestItem();
+            x.setProductId(ci.getProductId());
+            x.setUnitPrice(ci.getUnitPrice());
+            x.setQuantity(ci.getQuantity());
+            return x;
+        }).toList();
+        return validatePersonalVoucher(userId, code, items);
+    }
+
+    // Extract validation logic to reuse for both regular and personal vouchers
+    private ValidateVoucherResponse validateVoucherLogic(VoucherModel v, List<ValidateVoucherRequestItem> items) {
+        ValidateVoucherResponse resp = new ValidateVoucherResponse();
         resp.setCode(v.getCode());
         resp.setType(v.getType());
         resp.setApplyAllProducts(v.getApplyAllProducts());
@@ -211,17 +283,28 @@ public class VoucherService implements IVoucherService {
         return resp;
     }
 
-    @Override
-    public ValidateVoucherResponse validateForCart(Long userId, String code) {
-        CartModel cart = cartRepo.findByUser_Id(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Cart not found"));
-        List<ValidateVoucherRequestItem> items = cart.getCartItems().stream().map(ci -> {
-            ValidateVoucherRequestItem x = new ValidateVoucherRequestItem();
-            x.setProductId(ci.getProductId());
-            x.setUnitPrice(ci.getUnitPrice());
-            x.setQuantity(ci.getQuantity());
-            return x;
-        }).toList();
-        return validateForItems(code, items);
+    // Thread-safe method to mark personal voucher as used
+    @Transactional
+    public synchronized void markPersonalVoucherAsUsed(Long userId, String code) {
+        Optional<UserVoucherModel> userVoucherOpt = userVoucherRepo.findByVoucherCodeAndUserId(code, userId);
+        if (userVoucherOpt.isPresent()) {
+            UserVoucherModel userVoucher = userVoucherOpt.get();
+            if (!userVoucher.getIsUsed()) {
+                userVoucher.markAsUsed();
+                userVoucherRepo.save(userVoucher);
+                
+                // Also increment the voucher's used count
+                VoucherModel voucher = userVoucher.getVoucher();
+                voucher.setUsedCount((voucher.getUsedCount() != null ? voucher.getUsedCount() : 0) + 1);
+                voucherRepo.save(voucher);
+                
+                // Send usage confirmation notification
+                try {
+                    notificationService.sendVoucherUsageConfirmation(userVoucher);
+                } catch (Exception e) {
+                    // Log error but don't fail the voucher usage
+                }
+            }
+        }
     }
 }

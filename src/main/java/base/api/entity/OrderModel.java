@@ -25,6 +25,7 @@ public class OrderModel extends BaseModel {
     private String note;
     private String shippingAddress;
     private String phoneNumber;
+    private String recipientName;
     private LocalDateTime requestDeliveryTime;
 
     // Thông tin voucher áp dụng

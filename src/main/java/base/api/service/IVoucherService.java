@@ -17,5 +17,9 @@ public interface IVoucherService {
 
     ValidateVoucherResponse validateForItems(String code, List<ValidateVoucherRequestItem> items);
     ValidateVoucherResponse validateForCart(Long userId, String code);
+    
+    // Personal voucher validation methods
+    ValidateVoucherResponse validatePersonalVoucher(Long userId, String code, List<ValidateVoucherRequestItem> items);
+    ValidateVoucherResponse validatePersonalVoucherForCart(Long userId, String code);
 }
 

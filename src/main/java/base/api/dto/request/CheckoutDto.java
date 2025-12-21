@@ -14,6 +14,7 @@ public class CheckoutDto {
     private Long productId;
     private String shippingAddress;
     private String phoneNumber;
+    private String recipientName;
     private String returnUrl;
     private String cancelUrl;
     private String note;

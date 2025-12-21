@@ -78,6 +78,18 @@ public class UserModel extends BaseModel {
         @EqualsAndHashCode.Exclude
         private List<DeliveryAddressModel> deliveryAddresses = new ArrayList<>();
 
+        @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+        @JsonBackReference
+        @ToString.Exclude
+        @EqualsAndHashCode.Exclude
+        private List<UserVoucherModel> userVouchers = new ArrayList<>();
+
+        @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+        @JsonBackReference
+        @ToString.Exclude
+        @EqualsAndHashCode.Exclude
+        private List<ProductFavoriteModel> favorites = new ArrayList<>();
+
         public void setCart(CartModel cart) {
                 this.cart = cart;
                 if (cart != null && cart.getUser() != this) {

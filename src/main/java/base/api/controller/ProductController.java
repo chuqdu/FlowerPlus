@@ -75,10 +75,10 @@ public class ProductController extends BaseAPIController {
 
     @GetMapping("get-list-product-view")
     public ResponseEntity<TFUResponse<PageResponseDTO<ProductResponse>>> getProductsToView(
-            @RequestParam(value = "type", required = false) ProductType type,
             @RequestParam(value = "active", required = false) Boolean active,
             PageableRequestDTO pageableRequest) {
-        Page<ProductResponse> page = productService.getProducts(type, active, null, false, 0L,
+        // Chỉ trả về sản phẩm có type là PRODUCT (hoa)
+        Page<ProductResponse> page = productService.getProducts(ProductType.PRODUCT, active, null, false, 0L,
                 pageableRequest);
         return successPage(page);
     }

@@ -20,6 +20,7 @@ public class TransactionWithOrderDto {
     private Long orderId;
     private String shippingAddress;
     private String phoneNumber;
+    private String recipientName;
     private String note;
     private LocalDateTime requestDeliveryTime;
     

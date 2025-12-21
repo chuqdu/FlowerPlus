@@ -15,7 +15,10 @@ import java.util.List;
 @Data
 public class ProductModel extends BaseModel {
     private String name;
+    
+    @Column(columnDefinition = "TEXT")
     private String description;
+    
     private double price;
     private Integer stock;
     private ProductType productType;
@@ -48,5 +51,9 @@ public class ProductModel extends BaseModel {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonBackReference("product-order-items")
     private List<OrderItemModel> orderItems = new ArrayList<>();
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonBackReference("product-favorites")
+    private List<ProductFavoriteModel> favorites = new ArrayList<>();
 
 }

@@ -3,6 +3,7 @@ package base.api.service;
 import base.api.dto.request.CompleteForgotPasswordDto;
 import base.api.dto.request.DeliveryAddressDto;
 import base.api.dto.request.RegisterDto;
+import base.api.dto.request.UpdateProfileDto;
 import base.api.dto.response.InitiateForgotPasswordResponse;
 import base.api.entity.UserModel;
 
@@ -20,4 +21,5 @@ public interface IUserService {
     InitiateForgotPasswordResponse initiateForgotPassword(String contactInfo) throws Exception;
     void completeForgotPassword(CompleteForgotPasswordDto dto) throws Exception;
     void verifyEmail(base.api.dto.request.VerifyEmailDto dto) throws Exception;
+    UserModel updateProfile(Long userId, UpdateProfileDto dto);
 }
