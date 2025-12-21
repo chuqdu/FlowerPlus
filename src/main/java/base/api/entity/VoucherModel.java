@@ -46,4 +46,8 @@ public class VoucherModel extends BaseModel {
     )
     @JsonBackReference
     private Set<ProductModel> products = new HashSet<>();
+
+    @OneToMany(mappedBy = "voucher", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonBackReference
+    private Set<UserVoucherModel> userVouchers = new HashSet<>();
 }

@@ -69,7 +69,7 @@ public interface IOrderRepository extends JpaRepository<OrderModel, Long>, JpaSp
             "WHERE ds.step IN ('CANCELLED', 'DELIVERY_FAILED')", nativeQuery = true)
     Long countFailedOrders();
 
-    @Query(value = "SELECT COUNT(DISTINCT rr.id) FROM refund_requests rr WHERE rr.status = 'APPROVED'", nativeQuery = true)
+    @Query(value = "SELECT COUNT(DISTINCT rr.id) FROM refund_requests rr WHERE rr.status = 'COMPLETED'", nativeQuery = true)
     Long countRefundedOrders();
 
     @Query(value = "SELECT " +

@@ -80,6 +80,7 @@ public class OrderService implements IOrderService {
         order.setRequestDeliveryTime(dto.getRequestDeliveryTime());
         order.setShippingAddress(dto.getShippingAddress());
         order.setPhoneNumber(dto.getPhoneNumber());
+        order.setRecipientName(dto.getRecipientName());
         order.setNote(dto.getNote());
 
         for (CartItemModel ci : cart.getCartItems()) {
@@ -168,6 +169,7 @@ public class OrderService implements IOrderService {
         order.setRequestDeliveryTime(dto.getRequestDeliveryTime());
         order.setShippingAddress(dto.getShippingAddress());
         order.setPhoneNumber(dto.getPhoneNumber());
+        order.setRecipientName(dto.getRecipientName());
         order.addItem(OrderItemModel.of(
                 product.getId(),
                 product.getName(),

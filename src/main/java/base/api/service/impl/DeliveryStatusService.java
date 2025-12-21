@@ -99,4 +99,14 @@ public class DeliveryStatusService implements IDeliveryStatusService {
         if (dto.getStep() == null) throw new IllegalArgumentException("Step is required");
         return setCurrentStepCascading(orderId, dto.getStep(), dto.getNote(), dto.getLocation(), dto.getImageUrl(), userId);
     }
+
+    @Override
+    @Transactional
+    public void updateDeliveryStatusImage(Long deliveryStatusId, String imageUrl) {
+        DeliveryStatusModel deliveryStatus = deliveryStatusRepository.findById(deliveryStatusId)
+                .orElseThrow(() -> new IllegalArgumentException("Delivery status not found: " + deliveryStatusId));
+        
+        deliveryStatus.setImageUrl(imageUrl);
+        deliveryStatusRepository.save(deliveryStatus);
+    }
 }

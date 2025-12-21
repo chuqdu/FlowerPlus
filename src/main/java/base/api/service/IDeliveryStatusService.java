@@ -20,4 +20,6 @@ public interface IDeliveryStatusService {
     );
 
     DeliveryStatusDto appendStatus(Long orderId, DeliveryStatusCreateDto dto, Long userId);
+    
+    void updateDeliveryStatusImage(Long deliveryStatusId, String imageUrl);
 }

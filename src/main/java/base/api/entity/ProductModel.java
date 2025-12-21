@@ -52,4 +52,8 @@ public class ProductModel extends BaseModel {
     @JsonBackReference("product-order-items")
     private List<OrderItemModel> orderItems = new ArrayList<>();
 
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonBackReference("product-favorites")
+    private List<ProductFavoriteModel> favorites = new ArrayList<>();
+
 }

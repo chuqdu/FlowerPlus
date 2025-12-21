@@ -41,8 +41,8 @@ public class OrderController extends BaseAPIController {
     @PostMapping("checkout")
     public ResponseEntity<TFUResponse<Map<String, Object>>> checkout(@RequestBody CheckoutDto dto) throws Exception {
         Long userId = getCurrentUserId();
-        String returnUrl = "https://gooogle.com";
-        String cancelUrl = "https://gooogle.com";
+        String returnUrl = "https://flower-plus.vercel.app/profile";
+        String cancelUrl = "https://flower-plus.vercel.app/profile";
         dto.setUserId(userId);
         dto.setReturnUrl(returnUrl);
         dto.setCancelUrl(cancelUrl);
@@ -116,6 +116,21 @@ public class OrderController extends BaseAPIController {
                 getCurrentUserId()
                 );
         return success(dto);
+    }
+
+    @PutMapping("/{orderId}/delivery-status/{deliveryStatusId}/image")
+    public ResponseEntity<TFUResponse<String>> updateDeliveryStatusImage(
+            @PathVariable Long orderId,
+            @PathVariable Long deliveryStatusId,
+            @RequestBody Map<String, String> body
+    ) {
+        try {
+            String imageUrl = body.get("imageUrl");
+            deliveryStatusService.updateDeliveryStatusImage(deliveryStatusId, imageUrl);
+            return success("Cập nhật hình ảnh thành công");
+        } catch (Exception e) {
+            return badRequest(e.getMessage());
+        }
     }
 
     @PostMapping("/webhook-payos")

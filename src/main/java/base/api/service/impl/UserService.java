@@ -2,6 +2,7 @@ package base.api.service.impl;
 
 import base.api.dto.request.DeliveryAddressDto;
 import base.api.dto.request.RegisterDto;
+import base.api.dto.request.UpdateProfileDto;
 import base.api.entity.DeliveryAddressModel;
 import base.api.entity.UserModel;
 import base.api.enums.UserGender;
@@ -194,8 +195,9 @@ public class UserService implements IUserService {
                 deliveryAddressRepository.saveAll(others);
             }
 
+        }
+        else{
             deliveryAddressRepository.save(address);
-
         }
         return userRepository.findById(userId).orElse(user);
 
@@ -444,5 +446,30 @@ public class UserService implements IUserService {
         } catch (Exception e) {
             System.err.println("Failed to send welcome email: " + e.getMessage());
         }
+    }
+
+    @Override
+    @Transactional
+    public UserModel updateProfile(Long userId, UpdateProfileDto dto) {
+        UserModel user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+        // Kiểm tra email đã tồn tại (nếu thay đổi email)
+        if (!user.getEmail().equals(dto.getEmail()) && existedByEmail(dto.getEmail())) {
+            throw new RuntimeException("Email đã được sử dụng bởi tài khoản khác");
+        }
+
+        // Cập nhật thông tin
+        user.setFirstName(dto.getFirstName());
+        user.setLastName(dto.getLastName());
+        user.setEmail(dto.getEmail());
+        user.setPhone(dto.getPhone());
+        user.setBirthDate(dto.getBirthDate());
+        
+        if (dto.getGender() != null) {
+            user.setGender(UserGender.valueOf(dto.getGender()));
+        }
+
+        return userRepository.save(user);
     }
 }

@@ -133,4 +133,14 @@ public class AuthController extends BaseAPIController {
             return badRequest(e.getMessage());
         }
     }
+
+    @PostMapping("update-profile")
+    public ResponseEntity<TFUResponse<UserModel>> updateProfile(@RequestBody UpdateProfileDto dto) {
+        try {
+            UserModel updatedUser = userService.updateProfile(getCurrentUserId(), dto);
+            return success(updatedUser);
+        } catch (Exception e) {
+            return badRequest(e.getMessage());
+        }
+    }
 }

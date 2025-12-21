@@ -45,6 +45,7 @@ public class TransactionService implements ITransactionService {
                 dto.setOrderId(order.getId());
                 dto.setShippingAddress(order.getShippingAddress());
                 dto.setPhoneNumber(order.getPhoneNumber());
+                dto.setRecipientName(order.getRecipientName());
                 dto.setNote(order.getNote());
                 dto.setRequestDeliveryTime(order.getRequestDeliveryTime());
                 

@@ -1,0 +1,29 @@
+package base.api.dto.request;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+@Data
+public class UpdateProfileDto {
+    
+    @NotBlank(message = "Họ không được để trống")
+    private String firstName;
+    
+    @NotBlank(message = "Tên không được để trống")
+    private String lastName;
+    
+    @Email(message = "Email không hợp lệ")
+    private String email;
+    
+    @Pattern(regexp = "^[0-9]{10,11}$", message = "Số điện thoại không hợp lệ")
+    private String phone;
+    
+    private LocalDateTime birthDate;
+    
+    @Pattern(regexp = "^(MALE|FEMALE|OTHER)$", message = "Giới tính không hợp lệ")
+    private String gender;
+}
