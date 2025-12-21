@@ -385,12 +385,31 @@ public class ProductService implements IProductService {
         r.setProductString(m.getProductString());
 
         if (m.getProductType() == ProductType.PRODUCT) {
-            // Query trực tiếp categories từ child products từ database
-            // Đảm bảo lấy tất cả categories từ tất cả child products
-            List<CategoryModel> childCategories = productRepository.findCategoriesByChildProducts(m.getId());
+            // Lấy categories từ child products: lấy child IDs từ compositions, rồi query từng child với categories
+            Set<CategoryModel> unionCategories = new LinkedHashSet<>();
             
-            // Convert to Set để loại bỏ duplicate, sau đó convert to List
-            Set<CategoryModel> unionCategories = new LinkedHashSet<>(childCategories);
+            if (m.getCompositions() != null && !m.getCompositions().isEmpty()) {
+                // Lấy tất cả child product IDs
+                List<Long> childIds = m.getCompositions().stream()
+                        .map(comp -> comp.getChild() != null ? comp.getChild().getId() : null)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .collect(Collectors.toList());
+                
+                // Query từng child product với đầy đủ categories
+                for (Long childId : childIds) {
+                    productRepository.findByIdWithCategories(childId).ifPresent(child -> {
+                        if (child.getProductCategories() != null) {
+                            for (ProductCategoryModel pcm : child.getProductCategories()) {
+                                CategoryModel category = pcm.getCategory();
+                                if (category != null) {
+                                    unionCategories.add(category);
+                                }
+                            }
+                        }
+                    });
+                }
+            }
             
             // Convert Set to List
             r.setCategories(

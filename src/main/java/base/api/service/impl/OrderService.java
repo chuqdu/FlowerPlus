@@ -379,7 +379,7 @@ public class OrderService implements IOrderService {
                 "<p style='margin: 10px 0 0 0;'>Bạn có thể theo dõi trạng thái hoàn tiền trong trang <strong>Cá nhân > Hoàn tiền</strong>.</p>" +
                 "</div>" +
                 "<div style='text-align: center; margin: 30px 0;'>" +
-                "<a href='http://localhost:3000/profile' style='background-color: #e91e63; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;'>Xem trạng thái hoàn tiền</a>" +
+                "<a href='https://flower-plus.vercel.app/profile' style='background-color: #e91e63; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;'>Xem trạng thái hoàn tiền</a>" +
                 "</div>" +
                 "<p style='color: #666; font-size: 14px;'>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi.</p>" +
                 "<hr style='border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;'>" +

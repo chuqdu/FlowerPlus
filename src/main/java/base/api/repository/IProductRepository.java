@@ -26,10 +26,4 @@ public interface IProductRepository extends JpaRepository<ProductModel, Long>, J
            "WHERE p.id = :id")
     Optional<ProductModel> findByIdWithCategories(@Param("id") Long id);
     
-    @Query("SELECT DISTINCT c FROM ProductCompositionModel comp " +
-           "JOIN comp.child child " +
-           "JOIN child.productCategories pc " +
-           "JOIN pc.category c " +
-           "WHERE comp.parent.id = :productId")
-    List<CategoryModel> findCategoriesByChildProducts(@Param("productId") Long productId);
 }

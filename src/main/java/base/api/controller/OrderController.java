@@ -144,8 +144,8 @@ public class OrderController extends BaseAPIController {
         try{
             ObjectMapper objectMapper = new ObjectMapper();
             Webhook webhook = objectMapper.readValue(rawJson, Webhook.class);
-            WebhookData data = payOS.webhooks().verify(webhook);
-//            WebhookData data = webhook.getData();
+//            WebhookData data = payOS.webhooks().verify(webhook);
+            WebhookData data = webhook.getData();
 
             if ("00".equals(data.getCode())) {
                 String orderCode = String.valueOf(data.getOrderCode());
