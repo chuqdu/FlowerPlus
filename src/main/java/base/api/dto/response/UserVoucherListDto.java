@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 public class UserVoucherListDto {
     // UserVoucher info
     private Long userVoucherId;
+    private Long voucherId;
     private LocalDateTime assignedAt;
     private Boolean isUsed;
     private LocalDateTime usedAt;

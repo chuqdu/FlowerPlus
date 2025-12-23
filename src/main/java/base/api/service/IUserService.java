@@ -22,4 +22,5 @@ public interface IUserService {
     void completeForgotPassword(CompleteForgotPasswordDto dto) throws Exception;
     void verifyEmail(base.api.dto.request.VerifyEmailDto dto) throws Exception;
     UserModel updateProfile(Long userId, UpdateProfileDto dto);
+    void changePassword(Long userId, base.api.dto.request.ChangePasswordDto dto) throws Exception;
 }

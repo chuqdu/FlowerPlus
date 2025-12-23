@@ -144,4 +144,14 @@ public class AuthController extends BaseAPIController {
             return badRequest(e.getMessage());
         }
     }
+
+    @PostMapping("change-password")
+    public ResponseEntity<TFUResponse<String>> changePassword(@RequestBody base.api.dto.request.ChangePasswordDto dto) {
+        try {
+            userService.changePassword(getCurrentUserId(), dto);
+            return success("Đổi mật khẩu thành công");
+        } catch (Exception e) {
+            return badRequest(e.getMessage());
+        }
+    }
 }

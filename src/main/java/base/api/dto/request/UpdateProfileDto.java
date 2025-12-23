@@ -15,7 +15,9 @@ public class UpdateProfileDto {
     
     @NotBlank(message = "Tên không được để trống")
     private String lastName;
-    
+
+    private String avatar;
+
     @Email(message = "Email không hợp lệ")
     private String email;
     

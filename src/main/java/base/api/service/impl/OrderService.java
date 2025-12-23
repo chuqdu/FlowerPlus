@@ -157,6 +157,11 @@ public class OrderService implements IOrderService {
     }
 
     @Override
+    public List<OrderModel> getOrdersByUserIdAndVoucherId(Long userId, Long voucherId) {
+        return orderRepo.findByUser_IdAndVoucher_IdOrderByCreatedAtDesc(userId, voucherId);
+    }
+
+    @Override
     public String checkoutCustomProduct(CheckoutDto dto) throws Exception {
         UserModel user = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
@@ -278,6 +283,7 @@ public class OrderService implements IOrderService {
                 int newStock = product.getStock() - orderItem.getQuantity();
                 if (newStock < 0) {
                     newStock = 0; // Đảm bảo stock không âm
+                    order.setNote(order.getNote() + ".Cảnh báo: Sản phẩm " + product.getName() + " đã hết hàng khi thanh toán.");
                 }
                 product.setStock(newStock);
                 productRepository.save(product);
@@ -291,7 +297,6 @@ public class OrderService implements IOrderService {
         OrderModel order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy đơn hàng"));
 
-        // Kiểm tra quyền sở hữu
 //        if (!order.getUser().getId().equals(userId)) {
 //            throw new IllegalStateException("Bạn không có quyền hủy đơn hàng này");
 //        }

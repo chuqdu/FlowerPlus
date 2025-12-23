@@ -43,8 +43,8 @@ public class OrderController extends BaseAPIController {
     @PostMapping("checkout")
     public ResponseEntity<TFUResponse<Map<String, Object>>> checkout(@RequestBody CheckoutDto dto) throws Exception {
         Long userId = getCurrentUserId();
-        String returnUrl = "https://flower-plus.vercel.app/profile";
-        String cancelUrl = "https://flower-plus.vercel.app/profile";
+        String returnUrl = "https://flower-plus.vercel.app/payment/success";
+        String cancelUrl = "https://flower-plus.vercel.app/payment/failure";
         dto.setUserId(userId);
         dto.setReturnUrl(returnUrl);
         dto.setCancelUrl(cancelUrl);
@@ -57,8 +57,8 @@ public class OrderController extends BaseAPIController {
     @PostMapping("checkout-product")
     public ResponseEntity<TFUResponse<Map<String, Object>>> checkoutProduct(@RequestBody CheckoutDto dto) throws Exception {
         Long userId = getCurrentUserId();
-        String returnUrl = "https://flower-plus.vercel.app/profile";
-        String cancelUrl = "https://flower-plus.vercel.app/profile";
+        String returnUrl = "https://flower-plus.vercel.app/payment/success";
+        String cancelUrl = "https://flower-plus.vercel.app/payment/failure";
         dto.setUserId(userId);
         dto.setReturnUrl(returnUrl);
         dto.setCancelUrl(cancelUrl);
@@ -73,8 +73,8 @@ public class OrderController extends BaseAPIController {
             @RequestBody AddTransactionToOrderDto dto
     ) throws Exception {
         Long userId = getCurrentUserId();
-        String returnUrl = "https://flower-plus.vercel.app/profile";
-        String cancelUrl = "https://flower-plus.vercel.app/profile";
+        String returnUrl = "https://flower-plus.vercel.app/payment/success";
+        String cancelUrl = "https://flower-plus.vercel.app/payment/failure";
         dto.setReturnUrl(returnUrl);
         dto.setCancelUrl(cancelUrl);
         dto.setUserId(userId);
@@ -128,6 +128,17 @@ public class OrderController extends BaseAPIController {
                 .map(order -> mapper.map(order, OrderResponseDto.class))
                 .toList();
 
+        return success(orders);
+    }
+
+    @GetMapping("get-list-orders-by-user-and-voucher")
+    public ResponseEntity<TFUResponse<List<OrderResponseDto>>> getListOrdersByUserIdAndVoucherId(
+            @RequestParam Long voucherId) throws Exception {
+        Long userId = getCurrentUserId();
+        List<OrderModel> orderModels = orderService.getOrdersByUserIdAndVoucherId(userId, voucherId);
+        List<OrderResponseDto> orders = orderModels.stream()
+                .map(order -> mapper.map(order, OrderResponseDto.class))
+                .toList();
         return success(orders);
     }
 

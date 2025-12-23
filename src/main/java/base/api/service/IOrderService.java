@@ -11,6 +11,7 @@ public interface IOrderService {
     String checkout(CheckoutDto dto) throws Exception;
     List<OrderModel> getAllOrders();
     List<OrderModel> getOrdersByUserId(Long userId);
+    List<OrderModel> getOrdersByUserIdAndVoucherId(Long userId, Long voucherId);
     String checkoutCustomProduct(CheckoutDto dto) throws Exception;
     String addPaymentToOrder(AddTransactionToOrderDto dto) throws Exception;
     void handlePaymentSuccess(String orderCode) throws Exception;

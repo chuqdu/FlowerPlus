@@ -464,6 +464,7 @@ public class UserService implements IUserService {
         user.setLastName(dto.getLastName());
         user.setEmail(dto.getEmail());
         user.setPhone(dto.getPhone());
+        user.setAvatar(dto.getAvatar());
         user.setBirthDate(dto.getBirthDate());
         
         if (dto.getGender() != null) {
@@ -471,5 +472,31 @@ public class UserService implements IUserService {
         }
 
         return userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(Long userId, base.api.dto.request.ChangePasswordDto dto) throws Exception {
+        UserModel user = userRepository.findById(userId)
+                .orElseThrow(() -> new Exception("Không tìm thấy người dùng"));
+
+        // Kiểm tra mật khẩu cũ
+        if (!passwordEncoder.matches(dto.getOldPassword(), user.getPassword())) {
+            throw new Exception("Mật khẩu cũ không đúng");
+        }
+
+        // Kiểm tra mật khẩu mới và xác nhận khớp
+        if (!dto.getNewPassword().equals(dto.getConfirmNewPassword())) {
+            throw new Exception("Mật khẩu xác nhận không khớp");
+        }
+
+        // Kiểm tra độ dài mật khẩu
+        if (dto.getNewPassword().length() < 6) {
+            throw new Exception("Mật khẩu phải có ít nhất 6 ký tự");
+        }
+
+        // Cập nhật mật khẩu mới
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        userRepository.save(user);
     }
 }
