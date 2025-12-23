@@ -13,6 +13,7 @@ import base.api.enums.SyncStatus;
 import base.api.repository.ICategoryRepository;
 import base.api.repository.IProductRepository;
 import base.api.service.IProductService;
+import jakarta.persistence.criteria.JoinType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -359,9 +360,21 @@ public class ProductService implements IProductService {
             }
 
             if (categoryId != null) {
-                var pcJoin = root.join("productCategories", jakarta.persistence.criteria.JoinType.INNER);
-                var catJoin = pcJoin.join("category", jakarta.persistence.criteria.JoinType.INNER);
+                // Product (parent) -> compositions (ProductCompositionModel)
+                var compositionsJoin = root.join("compositions", JoinType.INNER);
+
+                // ProductCompositionModel -> child (ProductModel - thành phần con)
+                var childJoin = compositionsJoin.join("child", JoinType.INNER);
+
+                // child ProductModel -> productCategories
+                var pcJoin = childJoin.join("productCategories", JoinType.INNER);
+
+                // ProductCategoryModel -> category
+                var catJoin = pcJoin.join("category", JoinType.INNER);
+
+                // Filter theo category của thành phần con
                 preds.add(cb.equal(catJoin.get("id"), categoryId));
+
                 query.distinct(true);
             }
 
@@ -385,33 +398,30 @@ public class ProductService implements IProductService {
         r.setProductString(m.getProductString());
 
         if (m.getProductType() == ProductType.PRODUCT) {
-            // Lấy categories từ child products: lấy child IDs từ compositions, rồi query từng child với categories
-            Set<CategoryModel> unionCategories = new LinkedHashSet<>();
+            List<CategoryModel> unionCategories = new ArrayList<>();
             
             if (m.getCompositions() != null && !m.getCompositions().isEmpty()) {
-                // Lấy tất cả child product IDs
                 List<Long> childIds = m.getCompositions().stream()
                         .map(comp -> comp.getChild() != null ? comp.getChild().getId() : null)
                         .filter(Objects::nonNull)
                         .distinct()
                         .collect(Collectors.toList());
                 
-                // Query từng child product với đầy đủ categories
                 for (Long childId : childIds) {
-                    productRepository.findByIdWithCategories(childId).ifPresent(child -> {
-                        if (child.getProductCategories() != null) {
-                            for (ProductCategoryModel pcm : child.getProductCategories()) {
-                                CategoryModel category = pcm.getCategory();
-                                if (category != null) {
-                                    unionCategories.add(category);
-                                }
+                    ProductModel child = productRepository.findByIdWithCategories(childId)
+                            .orElse(productRepository.findById(childId).orElse(null));
+
+                    if (child != null && child.getProductCategories() != null) {
+                        for (ProductCategoryModel pcm : child.getProductCategories()) {
+                            CategoryModel category = pcm.getCategory();
+                            if (category != null) {
+                                unionCategories.add(category);
                             }
                         }
-                    });
+                    }
                 }
             }
             
-            // Convert Set to List
             r.setCategories(
                     unionCategories.stream()
                             .map(c -> {

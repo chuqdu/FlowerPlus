@@ -27,6 +27,7 @@ public class DataInitializer implements CommandLineRunner {
         createDefaultAdmin();
         createDefaultShopOwner();
         createDefaultUser();
+        createDefaultStaff();
     }
 
     private void createDefaultAdmin() {
@@ -95,6 +96,28 @@ public class DataInitializer implements CommandLineRunner {
             System.out.println("Default user flower created: " + user);
         } else {
             System.out.println("user already exists");
+        }
+    }
+    private void createDefaultStaff() {
+        String userFlower = "staff@gmail.com";
+
+        if (!userService.existedByEmail(userFlower)) {
+            UserModel user = new UserModel();
+            user.setEmail(userFlower);
+            user.setPassword(passwordEncoder.encode("123123"));
+            user.setUserName("staff");
+            user.setFirstName("flower");
+            user.setLastName("staff");
+            user.setRole(UserRole.STAFF);
+            user.setActive(true);
+            user.setGender(UserGender.MALE);
+            user.setAvatar("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPJ-ih9LSfQOHH4iOO4sMC44aI4HziBabf8A&s");
+            user.setBirthDate(LocalDateTime.of(1990, 6, 15, 0, 0));
+            user.setActive(true);
+            userService.createUser(user);
+            System.out.println("Default staff flower created: " + user);
+        } else {
+            System.out.println("staff already exists");
         }
     }
 
