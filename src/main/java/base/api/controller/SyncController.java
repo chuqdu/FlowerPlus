@@ -54,6 +54,20 @@ public class SyncController extends BaseAPIController {
         }
     }
 
+    @PutMapping("/products/update")
+    public ResponseEntity<?> syncProductUpdate(@RequestBody base.api.dto.request.SyncProductRequest request) {
+        try {
+            boolean success = syncService.syncProductUpdate(request);
+            if (success) {
+                return success("Product updated successfully in AI service");
+            } else {
+                return badRequest("Failed to update product in AI service");
+            }
+        } catch (Exception e) {
+            return badRequest("Failed to update product: " + e.getMessage());
+        }
+    }
+
     @GetMapping("/stats")
     public ResponseEntity<?> getSyncStats() {
         try {

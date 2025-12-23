@@ -16,7 +16,7 @@ import java.util.List;
 public class ProductModel extends BaseModel {
     private String name;
     
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "LONGTEXT")
     private String description;
     
     private double price;
