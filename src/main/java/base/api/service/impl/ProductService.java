@@ -13,10 +13,14 @@ import base.api.enums.SyncStatus;
 import base.api.repository.ICategoryRepository;
 import base.api.repository.IProductRepository;
 import base.api.service.IProductService;
+import base.api.service.ISyncService;
+import base.api.dto.request.SyncProductRequest;
 import jakarta.persistence.criteria.JoinType;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.jpa.domain.Specification;
@@ -25,6 +29,7 @@ import jakarta.persistence.criteria.Predicate;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class ProductService implements IProductService {
 
@@ -33,6 +38,9 @@ public class ProductService implements IProductService {
 
     @Autowired
     private IProductRepository productRepository;
+
+    @Autowired
+    private ISyncService syncService;
 
     @Transactional
     @Override
@@ -153,7 +161,12 @@ public class ProductService implements IProductService {
                 throw new IllegalStateException("Unsupported product type: " + dto.getProductType());
         }
 
-        return productRepository.save(product);
+        ProductModel savedProduct = productRepository.save(product);
+        
+        // Tự động sync với AI sau khi tạo thành công (chạy ngầm, không ảnh hưởng luồng chính)
+        syncProductAfterUpdateAsync(savedProduct);
+        
+        return savedProduct;
     }
 
     @Transactional
@@ -249,7 +262,56 @@ public class ProductService implements IProductService {
             }
         }
 
-        return productRepository.save(existingProduct);
+        ProductModel savedProduct = productRepository.save(existingProduct);
+        
+        // Tự động sync với AI sau khi update thành công (chạy ngầm, không ảnh hưởng luồng chính)
+        syncProductAfterUpdateAsync(savedProduct);
+        
+        return savedProduct;
+    }
+
+    private void syncProductAfterUpdateAsync(ProductModel product) {
+        try {
+            // Chỉ sync nếu có category
+            if (product.getProductCategories() == null || product.getProductCategories().isEmpty()) {
+                log.warn("Product {} has no categories, skipping sync", product.getId());
+                return;
+            }
+            
+            // Generate product string nếu chưa có
+            String productString = product.getProductString();
+            if (productString == null || productString.isEmpty()) {
+                log.info("Generating product string for product {}", product.getId());
+                productString = syncService.generateProductString(product.getId());
+                if (productString != null && !productString.isEmpty()) {
+                    product.setProductString(productString);
+                    productRepository.save(product);
+                } else {
+                    log.warn("Failed to generate product string for product {}, skipping sync", product.getId());
+                    return; // Không sync nếu không generate được product string
+                }
+            }
+            
+            // Lấy category đầu tiên
+            Long categoryId = product.getProductCategories().get(0).getCategory().getId();
+            
+            // Tạo sync request
+            SyncProductRequest request = new SyncProductRequest();
+            request.setProduct_id(product.getId());
+            request.setProduct_name(product.getName());
+            request.setPrice(product.getPrice());
+            request.setCategory_id(categoryId);
+            request.setProduct_string(productString);
+            
+            // In ra payload để debug
+            log.info("Preparing to sync product update to AI service. Payload: {}", request);
+            
+            // Gọi sync update async (chạy ngầm)
+            syncService.syncProductUpdateAsync(request);
+        } catch (Exception e) {
+            // Log lỗi nhưng không throw để không ảnh hưởng đến luồng chính
+            log.error("Error preparing sync for product {} after update: {}", product.getId(), e.getMessage(), e);
+        }
     }
 
     @Override
@@ -414,7 +476,7 @@ public class ProductService implements IProductService {
                     if (child != null && child.getProductCategories() != null) {
                         for (ProductCategoryModel pcm : child.getProductCategories()) {
                             CategoryModel category = pcm.getCategory();
-                            if (category != null) {
+                            if (category != null && category.isPublic) {
                                 unionCategories.add(category);
                             }
                         }

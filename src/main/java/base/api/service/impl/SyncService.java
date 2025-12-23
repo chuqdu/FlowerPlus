@@ -202,6 +202,54 @@ public class SyncService implements ISyncService {
     }
 
     @Override
+    public boolean syncProductUpdate(SyncProductRequest request) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            
+            HttpEntity<SyncProductRequest> entity = new HttpEntity<>(request, headers);
+            
+            // Gọi PUT request để update product embed
+            String updateUrl = productUrl + "/" + request.getProduct_id();
+            ResponseEntity<String> response = restTemplate.exchange(
+                updateUrl, 
+                org.springframework.http.HttpMethod.PUT, 
+                entity, 
+                String.class
+            );
+            
+            boolean success = response.getStatusCode().is2xxSuccessful();
+            if (success) {
+                log.info("Product {} updated successfully in AI service", request.getProduct_id());
+            } else {
+                log.warn("Product {} update failed with status: {}", request.getProduct_id(), response.getStatusCode());
+            }
+            
+            return success;
+            
+        } catch (Exception e) {
+            log.error("Error calling product update sync API for product {}: {}", request.getProduct_id(), e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    @Async
+    public void syncProductUpdateAsync(SyncProductRequest request) {
+        try {
+            log.info("Starting async sync for product update. Payload: {}", request);
+            boolean success = syncProductUpdate(request);
+            if (success) {
+                log.info("Async sync completed successfully for product {}", request.getProduct_id());
+            } else {
+                log.warn("Async sync failed for product {}", request.getProduct_id());
+            }
+        } catch (Exception e) {
+            log.error("Error in async sync for product {}: {}", request.getProduct_id(), e.getMessage(), e);
+        }
+    }
+
+    @Override
     public String generateProductString(Long productId) {
         ProductModel product = productRepository.findById(productId).orElse(null);
         if (product == null) {
