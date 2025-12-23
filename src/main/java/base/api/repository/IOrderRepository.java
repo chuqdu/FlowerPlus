@@ -17,7 +17,7 @@ public interface IOrderRepository extends JpaRepository<OrderModel, Long>, JpaSp
     Optional<OrderModel> findByOrderCode(String code);
     List<OrderModel> findByUser_Id(Long userId);
     List<OrderModel> findAllByOrderByCreatedAtDesc();
-        List<OrderModel> findByUser_IdOrderByCreatedAtDesc(Long userId);
+    List<OrderModel> findByUser_IdOrderByCreatedAtDesc(Long userId);
     
     List<OrderModel> findByUser_IdAndVoucher_IdOrderByCreatedAtDesc(Long userId, Long voucherId);
 
