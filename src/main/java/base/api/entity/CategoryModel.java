@@ -15,7 +15,7 @@ import java.util.List;
 @Table(name = "categories")
 @NoArgsConstructor
 @ToString(onlyExplicitlyIncluded = true)
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 public class CategoryModel extends BaseModel {
 
     @ToString.Include

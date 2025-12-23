@@ -157,6 +157,11 @@ public class OrderService implements IOrderService {
     }
 
     @Override
+    public List<OrderModel> getOrdersByUserIdAndVoucherId(Long userId, Long voucherId) {
+        return orderRepo.findByUser_IdAndVoucher_IdOrderByCreatedAtDesc(userId, voucherId);
+    }
+
+    @Override
     public String checkoutCustomProduct(CheckoutDto dto) throws Exception {
         UserModel user = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
@@ -278,6 +283,7 @@ public class OrderService implements IOrderService {
                 int newStock = product.getStock() - orderItem.getQuantity();
                 if (newStock < 0) {
                     newStock = 0; // Đảm bảo stock không âm
+                    order.setNote(order.getNote() + ".Cảnh báo: Sản phẩm " + product.getName() + " đã hết hàng khi thanh toán.");
                 }
                 product.setStock(newStock);
                 productRepository.save(product);
@@ -291,7 +297,6 @@ public class OrderService implements IOrderService {
         OrderModel order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Không tìm thấy đơn hàng"));
 
-        // Kiểm tra quyền sở hữu
 //        if (!order.getUser().getId().equals(userId)) {
 //            throw new IllegalStateException("Bạn không có quyền hủy đơn hàng này");
 //        }
@@ -379,7 +384,7 @@ public class OrderService implements IOrderService {
                 "<p style='margin: 10px 0 0 0;'>Bạn có thể theo dõi trạng thái hoàn tiền trong trang <strong>Cá nhân > Hoàn tiền</strong>.</p>" +
                 "</div>" +
                 "<div style='text-align: center; margin: 30px 0;'>" +
-                "<a href='http://localhost:3000/profile' style='background-color: #e91e63; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;'>Xem trạng thái hoàn tiền</a>" +
+                "<a href='https://flower-plus.vercel.app/profile' style='background-color: #e91e63; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;'>Xem trạng thái hoàn tiền</a>" +
                 "</div>" +
                 "<p style='color: #666; font-size: 14px;'>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi.</p>" +
                 "<hr style='border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;'>" +

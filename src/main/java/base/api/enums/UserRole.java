@@ -9,5 +9,6 @@ public enum UserRole {
     USER,
     SHOP_OWNER,
     ADMIN,
-    DELIVERY_PERSON;
+    DELIVERY_PERSON,
+    STAFF
 }

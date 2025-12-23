@@ -39,7 +39,7 @@ public class AdminAuthController extends BaseAPIController {
                 return badRequest("Không tìm thấy user");
             }
 
-            if (!UserRole.ADMIN.equals(user.getRole()) && !UserRole.SHOP_OWNER.equals(user.getRole())) {
+            if (!UserRole.ADMIN.equals(user.getRole()) && !UserRole.STAFF.equals(user.getRole()) && !UserRole.SHOP_OWNER.equals(user.getRole())) {
                 return badRequest("Bạn không có quyền truy cập vào trang quản trị");
             }
 

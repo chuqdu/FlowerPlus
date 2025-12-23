@@ -43,8 +43,8 @@ public class OrderController extends BaseAPIController {
     @PostMapping("checkout")
     public ResponseEntity<TFUResponse<Map<String, Object>>> checkout(@RequestBody CheckoutDto dto) throws Exception {
         Long userId = getCurrentUserId();
-        String returnUrl = "https://flower-plus.vercel.app/profile";
-        String cancelUrl = "https://flower-plus.vercel.app/profile";
+        String returnUrl = "https://flower-plus.vercel.app/payment/success";
+        String cancelUrl = "https://flower-plus.vercel.app/payment/failure";
         dto.setUserId(userId);
         dto.setReturnUrl(returnUrl);
         dto.setCancelUrl(cancelUrl);
@@ -57,8 +57,8 @@ public class OrderController extends BaseAPIController {
     @PostMapping("checkout-product")
     public ResponseEntity<TFUResponse<Map<String, Object>>> checkoutProduct(@RequestBody CheckoutDto dto) throws Exception {
         Long userId = getCurrentUserId();
-        String returnUrl = "https://flower-plus.vercel.app/profile";
-        String cancelUrl = "https://flower-plus.vercel.app/profile";
+        String returnUrl = "https://flower-plus.vercel.app/payment/success";
+        String cancelUrl = "https://flower-plus.vercel.app/payment/failure";
         dto.setUserId(userId);
         dto.setReturnUrl(returnUrl);
         dto.setCancelUrl(cancelUrl);
@@ -73,8 +73,8 @@ public class OrderController extends BaseAPIController {
             @RequestBody AddTransactionToOrderDto dto
     ) throws Exception {
         Long userId = getCurrentUserId();
-        String returnUrl = "https://flower-plus.vercel.app/profile";
-        String cancelUrl = "https://flower-plus.vercel.app/profile";
+        String returnUrl = "https://flower-plus.vercel.app/payment/success";
+        String cancelUrl = "https://flower-plus.vercel.app/payment/failure";
         dto.setReturnUrl(returnUrl);
         dto.setCancelUrl(cancelUrl);
         dto.setUserId(userId);
@@ -97,10 +97,48 @@ public class OrderController extends BaseAPIController {
     public ResponseEntity<TFUResponse<List<OrderResponseDto>>> getListOrderByUserId() throws Exception {
         Long userId = getCurrentUserId();
         List<OrderModel> orderModels = orderService.getOrdersByUserId(userId);
+        
+        // Lọc các orders có payment chưa thành công và lấy 5 cái mới nhất
+        List<OrderModel> pendingOrders = orderModels.stream()
+                .filter(order -> order.getTransaction() != null 
+                        && order.getTransaction().getStatus() != null 
+                        && !"SUCCESS".equals(order.getTransaction().getStatus()))
+                .limit(5)
+                .toList();
+        
+        // Kiểm tra và cập nhật payment status cho các orders chưa thành công
+        for (OrderModel order : pendingOrders) {
+            try {
+                if (order.getTransaction() != null && order.getTransaction().getOrderCode() != null) {
+                    Long orderCode = Long.parseLong(order.getTransaction().getOrderCode());
+                    PaymentLink paymentInfo = payOS.paymentRequests().get(orderCode);
+                    if ("PAID".equals(paymentInfo.getStatus().toString())) {
+                        orderService.handlePaymentSuccess(order.getTransaction().getOrderCode());
+                    }
+                }
+            } catch (Exception e) {
+                // Log error nhưng không throw để không ảnh hưởng đến việc trả về danh sách orders
+                System.err.println("Error checking payment status for order: " + order.getOrderCode() + " - " + e.getMessage());
+            }
+        }
+        
+        // Lấy lại danh sách orders sau khi có thể đã cập nhật
+        orderModels = orderService.getOrdersByUserId(userId);
         List<OrderResponseDto> orders = orderModels.stream()
                 .map(order -> mapper.map(order, OrderResponseDto.class))
                 .toList();
 
+        return success(orders);
+    }
+
+    @GetMapping("get-list-orders-by-user-and-voucher")
+    public ResponseEntity<TFUResponse<List<OrderResponseDto>>> getListOrdersByUserIdAndVoucherId(
+            @RequestParam Long voucherId) throws Exception {
+        Long userId = getCurrentUserId();
+        List<OrderModel> orderModels = orderService.getOrdersByUserIdAndVoucherId(userId, voucherId);
+        List<OrderResponseDto> orders = orderModels.stream()
+                .map(order -> mapper.map(order, OrderResponseDto.class))
+                .toList();
         return success(orders);
     }
 
@@ -144,16 +182,17 @@ public class OrderController extends BaseAPIController {
         try{
             ObjectMapper objectMapper = new ObjectMapper();
             Webhook webhook = objectMapper.readValue(rawJson, Webhook.class);
-            WebhookData data = payOS.webhooks().verify(webhook);
-//            WebhookData data = webhook.getData();
+//            WebhookData data = payOS.webhooks().verify(webhook);
+            WebhookData data = webhook.getData();
 
             if ("00".equals(data.getCode())) {
                 String orderCode = String.valueOf(data.getOrderCode());
                 // Lấy thông tin thanh toán từ PayOS -> chủ động gọi lại -> đây có gọi là cơ chế polling để đảm bảo giao dịch sẽ luôn đúng (ko bị fake data)
                 PaymentLink paymentInfo = payOS.paymentRequests().get(data.getOrderCode());
-                if ("PAID".equals(paymentInfo.getStatus())) {
+                if ("PAID".equals(paymentInfo.getStatus().toString())) {
                     orderService.handlePaymentSuccess(String.valueOf(orderCode));
                 }
+//                orderService.handlePaymentSuccess(String.valueOf(orderCode));
             }
             return success(data.getCode());
         }

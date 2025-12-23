@@ -18,6 +18,8 @@ public interface IOrderRepository extends JpaRepository<OrderModel, Long>, JpaSp
     List<OrderModel> findByUser_Id(Long userId);
     List<OrderModel> findAllByOrderByCreatedAtDesc();
         List<OrderModel> findByUser_IdOrderByCreatedAtDesc(Long userId);
+    
+    List<OrderModel> findByUser_IdAndVoucher_IdOrderByCreatedAtDesc(Long userId, Long voucherId);
 
     @Query(value = "SELECT TO_CHAR(o.created_at, 'YYYY-MM') as month, COUNT(DISTINCT o.id) as orderCount " +
             "FROM orders o " +

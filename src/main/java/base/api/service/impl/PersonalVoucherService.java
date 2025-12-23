@@ -331,6 +331,7 @@ public class PersonalVoucherService implements IPersonalVoucherService {
         
         // Voucher details
         VoucherModel voucher = userVoucher.getVoucher();
+        dto.setVoucherId(voucher.getId());
         dto.setCode(voucher.getCode());
         dto.setType(voucher.getType());
         dto.setPercent(voucher.getPercent());
