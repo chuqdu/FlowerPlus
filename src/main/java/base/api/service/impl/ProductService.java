@@ -414,7 +414,7 @@ public class ProductService implements IProductService {
         r.setStock(m.getStock());
         r.setProductType(m.getProductType());
         r.setIsActive(m.getIsActive());
-        r.setImages(m.getImages());
+        r.setImages(m.getImages() != null ? m.getImages().replace("http://", "https://") : null);
         r.setSyncStatus(m.getSyncStatus());
         r.setProductString(m.getProductString());
 
@@ -492,7 +492,8 @@ public class ProductService implements IProductService {
             item.setChildName(comp.getChild().getName());
             item.setChildType(comp.getChild().getProductType());
             item.setChildPrice(comp.getChild().getPrice());
-            item.setChildImage(comp.getChild().getImages());
+            String childImages = comp.getChild().getImages();
+            item.setChildImage(childImages != null ? childImages.replace("http://", "https://") : null);
         }
         item.setQuantity(
                 comp.getQuantity() == null || comp.getQuantity() <= 0 ? 1 : comp.getQuantity()

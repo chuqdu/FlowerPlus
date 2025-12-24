@@ -36,7 +36,6 @@ public class CartService implements ICartService {
     @Override
     public CartResponse getCartByUser(Long userId) {
         CartModel cart = getOrCreateCart(userId);
-
         return CartMapper.toCartResponse(cart);
     }
 
@@ -58,7 +57,8 @@ public class CartService implements ICartService {
             item.setCart(cart);
             item.setProductId(request.getProductId());
             item.setProductName(product.getName());
-            item.setProductImage(product.getImages());
+            String productImage = product.getImages();
+            item.setProductImage(productImage != null ? productImage.replace("http://", "https://") : null);
             item.setUnitPrice(product.getPrice());
             item.setQuantity(request.getQuantity() != null ? request.getQuantity() : 1);
         } else {
