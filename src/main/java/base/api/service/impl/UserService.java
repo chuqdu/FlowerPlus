@@ -107,7 +107,7 @@ public class UserService implements IUserService {
                 fullName = dto.getUserName();
             }
 
-            String verifyUrl = "https://flower-plus.vercel.app/auth/verify-email/" + verificationToken;
+            String verifyUrl = "https://flowerplus.site/auth/verify-email/" + verificationToken;
             
             String body = String.format(
                 "<html>" +
@@ -278,7 +278,7 @@ public class UserService implements IUserService {
                 fullName = user.getUserName();
             }
 
-            String resetUrl = "https://flower-plus.vercel.app/auth/forgot-password/" + resetToken;
+            String resetUrl = "https://flowerplus.site/auth/forgot-password/" + resetToken;
             
             String body = String.format(
                 "<html>" +

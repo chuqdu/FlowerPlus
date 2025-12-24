@@ -14,7 +14,9 @@ public class CartMapper {
         r.setId(e.getId());
         r.setProductId(e.getProductId());
         r.setProductName(e.getProductName());
-        r.setProductImage(e.getProductImage());
+//        r.setProductImage(e.getProductImage());
+        String productImage = e.getProductImage();
+        r.setProductImage(productImage != null ? productImage.replace("http://", "https://") : null);
         r.setUnitPrice(e.getUnitPrice());
         r.setQuantity(e.getQuantity());
         r.setLineTotal(e.getLineTotal());

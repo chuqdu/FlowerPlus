@@ -1,9 +1,11 @@
 package base.api.service.impl;
 
+import base.api.base.Util;
 import base.api.dto.request.SyncCategoryRequest;
 import base.api.dto.request.SyncProductRequest;
 import base.api.entity.CategoryModel;
 import base.api.entity.ProductModel;
+import base.api.enums.ProductType;
 import base.api.enums.SyncStatus;
 import base.api.repository.ICategoryRepository;
 import base.api.repository.IProductRepository;
@@ -15,12 +17,19 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.StringHttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import jakarta.annotation.PostConstruct;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -30,7 +39,36 @@ public class SyncService implements ISyncService {
 
     private final ICategoryRepository categoryRepository;
     private final IProductRepository productRepository;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private RestTemplate restTemplate;
+    
+    @PostConstruct
+    public void initRestTemplate() {
+        this.restTemplate = new RestTemplate();
+        // Configure message converters: Jackson for JSON objects and String for responses
+        List<HttpMessageConverter<?>> messageConverters = new ArrayList<>();
+        
+        // Add Jackson converter for JSON serialization
+        MappingJackson2HttpMessageConverter jacksonConverter = new MappingJackson2HttpMessageConverter();
+        // Ensure it supports APPLICATION_JSON
+        jacksonConverter.setSupportedMediaTypes(List.of(
+            MediaType.APPLICATION_JSON,
+            MediaType.APPLICATION_JSON_UTF8
+        ));
+        messageConverters.add(jacksonConverter);
+        
+        // Add String converter for text responses
+        messageConverters.add(new StringHttpMessageConverter(
+            java.nio.charset.StandardCharsets.UTF_8));
+        
+        this.restTemplate.setMessageConverters(messageConverters);
+        
+        // Set request factory with timeout
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory = 
+            new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(10000); // 10 seconds
+        factory.setReadTimeout(30000); // 30 seconds
+        this.restTemplate.setRequestFactory(factory);
+    }
 
     @Value("${sync.category.url:https://good-fun.org/category}")
     private String categoryUrl;
@@ -40,6 +78,9 @@ public class SyncService implements ISyncService {
 
     @Value("${sync.batch.size:10}")
     private int batchSize;
+    
+    @Value("${sync.failed.batch.size:30}")
+    private int failedBatchSize;
 
     @Override
     @Async
@@ -47,18 +88,13 @@ public class SyncService implements ISyncService {
     public void syncCategoryBatch() {
         log.info("Starting category batch sync...");
         
-        // Get PENDING records and FAILED records that haven't been updated in last 5 minutes
-        List<CategoryModel> pendingCategories = categoryRepository.findBySyncStatusInOrderByUpdatedAtAsc(
-            List.of(SyncStatus.PENDING, SyncStatus.FAILED), 
-            org.springframework.data.domain.PageRequest.of(0, batchSize)
+        // Get all categories with syncStatus != SYNCED
+        List<CategoryModel> pendingCategories = categoryRepository.findCategoriesForSync(
+            SyncStatus.SYNCED,
+            org.springframework.data.domain.PageRequest.of(0, Integer.MAX_VALUE)
         );
-        
-        // Filter out recently failed records to avoid spam retry (30 seconds)
-        java.time.LocalDateTime thirtySecondsAgo = java.time.LocalDateTime.now().minusSeconds(30);
-        pendingCategories = pendingCategories.stream()
-            .filter(cat -> cat.getSyncStatus() == SyncStatus.PENDING || 
-                          cat.getUpdatedAt().isBefore(thirtySecondsAgo))
-            .collect(java.util.stream.Collectors.toList());
+
+        log.info("Found {} categories to sync", pendingCategories.size());
 
         for (CategoryModel category : pendingCategories) {
             try {
@@ -99,66 +135,94 @@ public class SyncService implements ISyncService {
     public void syncProductBatch() {
         log.info("Starting product batch sync...");
         
-        // Get PENDING records and FAILED records that haven't been updated in last 5 minutes
-        List<ProductModel> pendingProducts = productRepository.findBySyncStatusInOrderByUpdatedAtAsc(
-            List.of(SyncStatus.PENDING, SyncStatus.FAILED), 
-            org.springframework.data.domain.PageRequest.of(0, batchSize)
+        // Get all products with type = PRODUCT, isActive = true, price > 0, syncStatus != SYNCED
+        List<ProductModel> pendingProducts = productRepository.findProductsForSync(
+            SyncStatus.SYNCED,
+            ProductType.PRODUCT,
+            org.springframework.data.domain.PageRequest.of(0, Integer.MAX_VALUE)
         );
         
-        // Filter out recently failed records to avoid spam retry (30 seconds)
-        java.time.LocalDateTime thirtySecondsAgo = java.time.LocalDateTime.now().minusSeconds(30);
-        pendingProducts = pendingProducts.stream()
-            .filter(prod -> prod.getSyncStatus() == SyncStatus.PENDING || 
-                           prod.getUpdatedAt().isBefore(thirtySecondsAgo))
-            .collect(java.util.stream.Collectors.toList());
+        log.info("Found {} products to sync", pendingProducts.size());
 
         for (ProductModel product : pendingProducts) {
             try {
+                // Reload product from database to ensure all fields are loaded correctly
+                ProductModel freshProduct = productRepository.findById(product.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Product not found: " + product.getId()));
+                
+                // Log product details for debugging
+                log.info("Processing product - ID: {}, Name: {}, Price: {}", 
+                    freshProduct.getId(), freshProduct.getName(), freshProduct.getPrice());
+                
                 // Update status to SYNCING
-                product.setSyncStatus(SyncStatus.SYNCING);
-                productRepository.save(product);
+                freshProduct.setSyncStatus(SyncStatus.SYNCING);
+                productRepository.save(freshProduct);
 
                 // Generate product string if not exists
-                if (product.getProductString() == null || product.getProductString().isEmpty()) {
-                    String productString = generateProductString(product.getId());
-                    product.setProductString(productString);
-                    productRepository.save(product);
+                if (freshProduct.getProductString() == null || freshProduct.getProductString().isEmpty()) {
+                    String productString = generateProductString(freshProduct.getId());
+                    freshProduct.setProductString(productString);
+                    productRepository.save(freshProduct);
                 }
 
                 // Get primary category (first category in the list)
                 Long categoryId = null;
-                if (!product.getProductCategories().isEmpty()) {
-                    categoryId = product.getProductCategories().get(0).getCategory().getId();
+                if (!freshProduct.getProductCategories().isEmpty()) {
+                    categoryId = freshProduct.getProductCategories().get(0).getCategory().getId();
                     log.info("Product {} has {} categories, using primary category: {}", 
-                        product.getId(), product.getProductCategories().size(), categoryId);
+                        freshProduct.getId(), freshProduct.getProductCategories().size(), categoryId);
                 } else {
-                    log.warn("Product {} has no categories assigned", product.getId());
+                    log.warn("Product {} has no categories assigned, skipping sync", freshProduct.getId());
+                    freshProduct.setSyncStatus(SyncStatus.FAILED);
+                    productRepository.save(freshProduct);
+                    continue;
                 }
 
                 // Prepare sync request
                 SyncProductRequest request = new SyncProductRequest();
-                request.setProduct_id(product.getId());
-                request.setProduct_name(product.getName());
-                request.setPrice(product.getPrice());
+                request.setProduct_id(freshProduct.getId());
+                request.setProduct_name(freshProduct.getName());
+                request.setPrice(freshProduct.getPrice());
                 request.setCategory_id(categoryId);
-                request.setProduct_string(product.getProductString());
+                request.setProduct_string(freshProduct.getProductString());
 
                 // Log payload before sending
                 log.info("Syncing product payload: {}", request);
 
-                // Sync
-                boolean success = syncProduct(request);
+                // Step 1: Try POST (create)
+                boolean success = syncProductCreate(request);
                 
-                // Update status based on result
-                product.setSyncStatus(success ? SyncStatus.SYNCED : SyncStatus.FAILED);
-                productRepository.save(product);
-
-                log.info("Product {} sync {}", product.getId(), success ? "successful" : "failed");
+                if (!success) {
+                    // Step 2: If POST failed, retry with PUT (update)
+                    log.warn("Product {} POST failed, trying PUT instead", freshProduct.getId());
+                    boolean updateSuccess = syncProductUpdate(request);
+                    
+                    if (updateSuccess) {
+                        log.info("Product {} PUT successful after POST failed", freshProduct.getId());
+                        freshProduct.setSyncStatus(SyncStatus.SYNCED);
+                    } else {
+                        log.error("Product {} both POST and PUT failed", freshProduct.getId());
+                        freshProduct.setSyncStatus(SyncStatus.FAILED);
+                    }
+                } else {
+                    // POST successful
+                    freshProduct.setSyncStatus(SyncStatus.SYNCED);
+                    log.info("Product {} POST successful", freshProduct.getId());
+                }
+                
+                productRepository.save(freshProduct);
                 
             } catch (Exception e) {
-                log.error("Error syncing product {}: {}", product.getId(), e.getMessage());
-                product.setSyncStatus(SyncStatus.FAILED);
-                productRepository.save(product);
+                log.error("Error syncing product {}: {}", product.getId(), e.getMessage(), e);
+                try {
+                    ProductModel failedProduct = productRepository.findById(product.getId()).orElse(null);
+                    if (failedProduct != null) {
+                        failedProduct.setSyncStatus(SyncStatus.FAILED);
+                        productRepository.save(failedProduct);
+                    }
+                } catch (Exception saveException) {
+                    log.error("Failed to update sync status for product {}: {}", product.getId(), saveException.getMessage(), saveException);
+                }
             }
         }
         
@@ -170,54 +234,109 @@ public class SyncService implements ISyncService {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             
+            // Send object directly - RestTemplate will serialize it to JSON using MappingJackson2HttpMessageConverter
             HttpEntity<SyncCategoryRequest> entity = new HttpEntity<>(request, headers);
+            
+            // Log the request payload for debugging
+            String requestBodyJson = Util.toJson(request);
+            log.info("Category sync - URL: {}, Request body: {}", categoryUrl, requestBodyJson);
             
             ResponseEntity<String> response = restTemplate.postForEntity(categoryUrl, entity, String.class);
             
+            log.info("Category sync response - Status: {}, Body: {}", response.getStatusCode(), response.getBody());
             return response.getStatusCode().is2xxSuccessful();
             
-        } catch (Exception e) {
+        } catch (HttpClientErrorException e) {
+            log.error("Error calling category sync API: {} - Response body: {}", e.getMessage(), e.getResponseBodyAsString());
+            return false;
+        } catch (RestClientException e) {
             log.error("Error calling category sync API: {}", e.getMessage());
+            return false;
+        } catch (Exception e) {
+            log.error("Unexpected error calling category sync API: {}", e.getMessage(), e);
             return false;
         }
     }
 
     @Override
     public boolean syncProduct(SyncProductRequest request) {
+        // For backward compatibility, use POST with retry PUT
+        boolean success = syncProductCreate(request);
+        if (!success) {
+            success = syncProductUpdate(request);
+        }
+        return success;
+    }
+
+    /**
+     * Helper method: POST product (create)
+     */
+    private boolean syncProductCreate(SyncProductRequest request) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+            headers.set("User-Agent", "FlowerPlus-SyncService/1.0");
             
             HttpEntity<SyncProductRequest> entity = new HttpEntity<>(request, headers);
             
+            String requestBodyJson = Util.toJson(request);
+            log.info("Product POST (create) - URL: {}, Request body: {}", productUrl, requestBodyJson);
+            
             ResponseEntity<String> response = restTemplate.postForEntity(productUrl, entity, String.class);
             
+            log.info("Product POST response - Status: {}, Body: {}", response.getStatusCode(), response.getBody());
             return response.getStatusCode().is2xxSuccessful();
             
+        } catch (HttpClientErrorException e) {
+            log.error("Error calling product POST API: {} - Status: {} - Response body: {}", 
+                e.getMessage(), e.getStatusCode(), e.getResponseBodyAsString());
+            return false;
+        } catch (RestClientException e) {
+            log.error("Error calling product POST API: {}", e.getMessage(), e);
+            return false;
         } catch (Exception e) {
-            log.error("Error calling product sync API: {}", e.getMessage());
+            log.error("Unexpected error calling product POST API: {}", e.getMessage(), e);
             return false;
         }
     }
 
-    @Override
-    public boolean syncProductUpdate(SyncProductRequest request) {
+    /**
+     * Helper method: PUT product (update)
+     */
+    private boolean syncProductUpdate(SyncProductRequest request) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+            headers.set("User-Agent", "FlowerPlus-SyncService/1.0");
             
             HttpEntity<SyncProductRequest> entity = new HttpEntity<>(request, headers);
             
-            // Gọi PUT request để update product embed
             String updateUrl = productUrl + "/" + request.getProduct_id();
-            ResponseEntity<String> response = restTemplate.exchange(
+            
+            String requestBodyJson = Util.toJson(request);
+            log.info("Product PUT (update) - URL: {}, Request body: {}", updateUrl, requestBodyJson);
+            
+            ResponseEntity<Object> response = restTemplate.exchange(
                 updateUrl, 
                 org.springframework.http.HttpMethod.PUT, 
                 entity, 
-                String.class
+                Object.class
             );
             
+            String responseBody;
+            if (response.getBody() == null) {
+                responseBody = "null";
+            } else if (response.getBody() instanceof String) {
+                responseBody = (String) response.getBody();
+            } else {
+                responseBody = Util.toJson(response.getBody());
+            }
+            
+            log.info("Product PUT response - Status: {}, Body: {}", response.getStatusCode(), responseBody);
             boolean success = response.getStatusCode().is2xxSuccessful();
             if (success) {
                 log.info("Product {} updated successfully in AI service", request.getProduct_id());
@@ -227,25 +346,106 @@ public class SyncService implements ISyncService {
             
             return success;
             
+        } catch (HttpClientErrorException e) {
+            log.error("Error calling product PUT API for product {}: {} - Status: {} - Response body: {}", 
+                request.getProduct_id(), e.getMessage(), e.getStatusCode(), e.getResponseBodyAsString());
+            return false;
+        } catch (RestClientException e) {
+            log.error("Error calling product PUT API for product {}: {}", request.getProduct_id(), e.getMessage(), e);
+            return false;
         } catch (Exception e) {
-            log.error("Error calling product update sync API for product {}: {}", request.getProduct_id(), e.getMessage());
+            log.error("Unexpected error calling product PUT API for product {}: {}", request.getProduct_id(), e.getMessage(), e);
             return false;
         }
     }
 
     @Override
     @Async
-    public void syncProductUpdateAsync(SyncProductRequest request) {
+    public void syncProductAfterSave(ProductModel product, boolean isNew) {
         try {
-            log.info("Starting async sync for product update. Payload: {}", request);
-            boolean success = syncProductUpdate(request);
-            if (success) {
-                log.info("Async sync completed successfully for product {}", request.getProduct_id());
-            } else {
-                log.warn("Async sync failed for product {}", request.getProduct_id());
+            // Only sync if product is active, has price > 0, and has categories
+            if (product.getIsActive() == null || !product.getIsActive()) {
+                log.debug("Product {} is not active, skipping sync", product.getId());
+                return;
             }
+            if (product.getPrice() <= 0) {
+                log.debug("Product {} has price <= 0, skipping sync", product.getId());
+                return;
+            }
+            if (product.getProductCategories() == null || product.getProductCategories().isEmpty()) {
+                log.debug("Product {} has no categories, skipping sync", product.getId());
+                return;
+            }
+            if (product.getProductType() != ProductType.PRODUCT) {
+                log.debug("Product {} is not PRODUCT type, skipping sync", product.getId());
+                return;
+            }
+            
+            // Reload product to get fresh data
+            ProductModel freshProduct = productRepository.findById(product.getId()).orElse(null);
+            if (freshProduct == null) {
+                log.warn("Product {} not found for sync", product.getId());
+                return;
+            }
+            
+            // Generate product string if not exists
+            if (freshProduct.getProductString() == null || freshProduct.getProductString().isEmpty()) {
+                String productString = generateProductString(freshProduct.getId());
+                freshProduct.setProductString(productString);
+                productRepository.save(freshProduct);
+            }
+            
+            // Get primary category
+            Long categoryId = null;
+            if (!freshProduct.getProductCategories().isEmpty()) {
+                categoryId = freshProduct.getProductCategories().get(0).getCategory().getId();
+            }
+            
+            // Prepare sync request
+            SyncProductRequest request = new SyncProductRequest();
+            request.setProduct_id(freshProduct.getId());
+            request.setProduct_name(freshProduct.getName());
+            request.setPrice(freshProduct.getPrice());
+            request.setCategory_id(categoryId);
+            request.setProduct_string(freshProduct.getProductString());
+            
+            log.info("Auto-syncing product {} (isNew: {})", freshProduct.getId(), isNew);
+            
+            boolean success = false;
+            
+            if (isNew) {
+                // Create: POST → if fail then retry PUT
+                success = syncProductCreate(request);
+                if (!success) {
+                    log.warn("Product {} POST failed, retrying with PUT", freshProduct.getId());
+                    success = syncProductUpdate(request);
+                }
+            } else {
+                // Update: PUT directly
+                success = syncProductUpdate(request);
+            }
+            
+            // Update sync status
+            freshProduct.setSyncStatus(success ? SyncStatus.SYNCED : SyncStatus.FAILED);
+            productRepository.save(freshProduct);
+            
+            if (success) {
+                log.info("Product {} auto-sync successful", freshProduct.getId());
+            } else {
+                log.warn("Product {} auto-sync failed", freshProduct.getId());
+            }
+            
         } catch (Exception e) {
-            log.error("Error in async sync for product {}: {}", request.getProduct_id(), e.getMessage(), e);
+            log.error("Error in auto-sync for product {}: {}", product.getId(), e.getMessage(), e);
+            try {
+                ProductModel failedProduct = productRepository.findById(product.getId()).orElse(null);
+                if (failedProduct != null) {
+                    failedProduct.setSyncStatus(SyncStatus.FAILED);
+                    productRepository.save(failedProduct);
+                }
+            } catch (Exception saveException) {
+                log.error("Failed to update sync status for product {}: {}", product.getId(), saveException.getMessage());
+            }
         }
     }
 

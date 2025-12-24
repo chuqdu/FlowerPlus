@@ -28,7 +28,7 @@ public class OpenApiConfig {
                                 .url("http://localhost:8081")
                                 .description("Local"),
                         new Server()
-                                .url("https://flower.autopass.blog")
+                                .url("https://api.flowerplus.site")
                                 .description("Production")
                 ))
                 .components(new Components()

@@ -14,7 +14,6 @@ import base.api.repository.ICategoryRepository;
 import base.api.repository.IProductRepository;
 import base.api.service.IProductService;
 import base.api.service.ISyncService;
-import base.api.dto.request.SyncProductRequest;
 import jakarta.persistence.criteria.JoinType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +64,10 @@ public class ProductService implements IProductService {
         product.setIsActive(dto.getIsActive() == null ? Boolean.TRUE : dto.getIsActive());
         product.setImages(dto.getImages());
         product.setSyncStatus(SyncStatus.PENDING); // Set default sync status
+        
+        // Log product details for debugging
+        log.info("Creating product - Name: {}, Price: {}, Stock: {}, Type: {}", 
+            product.getName(), product.getPrice(), product.getStock(), product.getProductType());
 
         switch (dto.getProductType()) {
             case FLOWER:
@@ -164,7 +167,7 @@ public class ProductService implements IProductService {
         ProductModel savedProduct = productRepository.save(product);
         
         // Tự động sync với AI sau khi tạo thành công (chạy ngầm, không ảnh hưởng luồng chính)
-        syncProductAfterUpdateAsync(savedProduct);
+        syncService.syncProductAfterSave(savedProduct, true);
         
         return savedProduct;
     }
@@ -265,53 +268,9 @@ public class ProductService implements IProductService {
         ProductModel savedProduct = productRepository.save(existingProduct);
         
         // Tự động sync với AI sau khi update thành công (chạy ngầm, không ảnh hưởng luồng chính)
-        syncProductAfterUpdateAsync(savedProduct);
+        syncService.syncProductAfterSave(savedProduct, false);
         
         return savedProduct;
-    }
-
-    private void syncProductAfterUpdateAsync(ProductModel product) {
-        try {
-            // Chỉ sync nếu có category
-            if (product.getProductCategories() == null || product.getProductCategories().isEmpty()) {
-                log.warn("Product {} has no categories, skipping sync", product.getId());
-                return;
-            }
-            
-            // Generate product string nếu chưa có
-            String productString = product.getProductString();
-            if (productString == null || productString.isEmpty()) {
-                log.info("Generating product string for product {}", product.getId());
-                productString = syncService.generateProductString(product.getId());
-                if (productString != null && !productString.isEmpty()) {
-                    product.setProductString(productString);
-                    productRepository.save(product);
-                } else {
-                    log.warn("Failed to generate product string for product {}, skipping sync", product.getId());
-                    return; // Không sync nếu không generate được product string
-                }
-            }
-            
-            // Lấy category đầu tiên
-            Long categoryId = product.getProductCategories().get(0).getCategory().getId();
-            
-            // Tạo sync request
-            SyncProductRequest request = new SyncProductRequest();
-            request.setProduct_id(product.getId());
-            request.setProduct_name(product.getName());
-            request.setPrice(product.getPrice());
-            request.setCategory_id(categoryId);
-            request.setProduct_string(productString);
-            
-            // In ra payload để debug
-            log.info("Preparing to sync product update to AI service. Payload: {}", request);
-            
-            // Gọi sync update async (chạy ngầm)
-            syncService.syncProductUpdateAsync(request);
-        } catch (Exception e) {
-            // Log lỗi nhưng không throw để không ảnh hưởng đến luồng chính
-            log.error("Error preparing sync for product {} after update: {}", product.getId(), e.getMessage(), e);
-        }
     }
 
     @Override
@@ -455,7 +414,7 @@ public class ProductService implements IProductService {
         r.setStock(m.getStock());
         r.setProductType(m.getProductType());
         r.setIsActive(m.getIsActive());
-        r.setImages(m.getImages());
+        r.setImages(m.getImages() != null ? m.getImages().replace("http://", "https://") : null);
         r.setSyncStatus(m.getSyncStatus());
         r.setProductString(m.getProductString());
 
@@ -533,7 +492,8 @@ public class ProductService implements IProductService {
             item.setChildName(comp.getChild().getName());
             item.setChildType(comp.getChild().getProductType());
             item.setChildPrice(comp.getChild().getPrice());
-            item.setChildImage(comp.getChild().getImages());
+            String childImages = comp.getChild().getImages();
+            item.setChildImage(childImages != null ? childImages.replace("http://", "https://") : null);
         }
         item.setQuantity(
                 comp.getQuantity() == null || comp.getQuantity() <= 0 ? 1 : comp.getQuantity()

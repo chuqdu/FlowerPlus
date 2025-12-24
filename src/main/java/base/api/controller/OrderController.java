@@ -43,8 +43,8 @@ public class OrderController extends BaseAPIController {
     @PostMapping("checkout")
     public ResponseEntity<TFUResponse<Map<String, Object>>> checkout(@RequestBody CheckoutDto dto) throws Exception {
         Long userId = getCurrentUserId();
-        String returnUrl = "https://flower-plus.vercel.app/payment/success";
-        String cancelUrl = "https://flower-plus.vercel.app/payment/failure";
+        String returnUrl = "https://flowerplus.site/payment/success";
+        String cancelUrl = "https://flowerplus.site/payment/failure";
         dto.setUserId(userId);
         dto.setReturnUrl(returnUrl);
         dto.setCancelUrl(cancelUrl);
@@ -57,8 +57,8 @@ public class OrderController extends BaseAPIController {
     @PostMapping("checkout-product")
     public ResponseEntity<TFUResponse<Map<String, Object>>> checkoutProduct(@RequestBody CheckoutDto dto) throws Exception {
         Long userId = getCurrentUserId();
-        String returnUrl = "https://flower-plus.vercel.app/payment/success";
-        String cancelUrl = "https://flower-plus.vercel.app/payment/failure";
+        String returnUrl = "https://flowerplus.site/payment/success";
+        String cancelUrl = "https://flowerplus.site/payment/failure";
         dto.setUserId(userId);
         dto.setReturnUrl(returnUrl);
         dto.setCancelUrl(cancelUrl);
@@ -73,8 +73,8 @@ public class OrderController extends BaseAPIController {
             @RequestBody AddTransactionToOrderDto dto
     ) throws Exception {
         Long userId = getCurrentUserId();
-        String returnUrl = "https://flower-plus.vercel.app/payment/success";
-        String cancelUrl = "https://flower-plus.vercel.app/payment/failure";
+        String returnUrl = "https://flowerplus.site/payment/success";
+        String cancelUrl = "https://flowerplus.site/payment/failure";
         dto.setReturnUrl(returnUrl);
         dto.setCancelUrl(cancelUrl);
         dto.setUserId(userId);
