@@ -61,6 +61,11 @@ public class UserService implements IUserService {
 
     @Override
     public UserModel registerUser(RegisterDto dto) {
+        // Validate phone không được null/empty
+        if (dto.getPhone() == null || dto.getPhone().trim().isEmpty()) {
+            throw new IllegalArgumentException("Số điện thoại không được để trống");
+        }
+
         // Kiểm tra username đã tồn tại
         UserModel existingUser = userRepository.findByUserName(dto.getUserName()).orElse(null);
         if(existingUser != null){
@@ -185,9 +190,9 @@ public class UserService implements IUserService {
 
         boolean shouldBeDefault = dto.isDefault();
         address.setDefault(shouldBeDefault);
+        List<DeliveryAddressModel> others = deliveryAddressRepository.findByUserId(userId);
 
-        if (shouldBeDefault) {
-            List<DeliveryAddressModel> others = deliveryAddressRepository.findByUserId(userId);
+        if (shouldBeDefault && !others.isEmpty()) {
             for (DeliveryAddressModel it : others) {
                 if (it.getId() != null && !it.getId().equals(address.getId()) && it.isDefault()) {
                     it.setDefault(false);

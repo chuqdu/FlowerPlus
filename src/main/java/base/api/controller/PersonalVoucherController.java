@@ -67,10 +67,11 @@ public class PersonalVoucherController extends BaseAPIController {
             @RequestParam(required = false) Long userId,
             @RequestParam(required = false) Boolean isUsed,
             @RequestParam(required = false) String createdBy,
+            @RequestParam(required = false) String searchTerm,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<PersonalVoucherResponseDto> result = personalVoucherService.getPersonalVouchersWithFilters(userId, isUsed, createdBy, pageable);
+        Page<PersonalVoucherResponseDto> result = personalVoucherService.getPersonalVouchersWithFilters(userId, isUsed, createdBy, searchTerm, pageable);
         return successPage(result);
     }
 

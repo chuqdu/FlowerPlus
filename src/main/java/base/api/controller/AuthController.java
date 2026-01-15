@@ -35,13 +35,28 @@ public class AuthController extends BaseAPIController {
     @PostMapping("login")
     public ResponseEntity<TFUResponse<AuthResponse>> login(@RequestBody AuthRequest dto)
     {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(dto.getUsername(),dto.getPassword()));
+        try{
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            dto.getUsername(),
+                            dto.getPassword()
+                    )
+            );
+        }
+        catch (Exception ex)
+        {
+            return badRequest("Sai tên đăng nhập hoặc mật khẩu");
+        }
 
         UserModel user = userService.findByUserName(dto.getUsername());
 
         if(user == null){
             return badRequest("Không tìm thấy user");
+        }
+
+        if(!user.isVerified)
+        {
+            return badRequest("Vui lòng xác thực email trước khi đăng nhập");
         }
 
         String jwt = jwtUtil.generateToken(user);

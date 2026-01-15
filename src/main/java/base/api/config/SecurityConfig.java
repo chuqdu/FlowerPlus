@@ -44,20 +44,20 @@ public class SecurityConfig {
             "/api/auth/forgot-password/complete",
             "/api/auth/verify-email",
             "/ws/**",
-            "/api/orders/webhook-payos"
+            "/api/orders/webhook-payos",
+            "/api/ai/orders/**"
     };
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   AuthenticationManager authenticationManager) throws Exception {
+            AuthenticationManager authenticationManager) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .authenticationManager(authenticationManager);
 
@@ -77,7 +77,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3435", "https://flower-plus.vercel.app", "https://api.flowerplus.site", "https://flower.autopass.blog", "https://flowerplus.site" ));
+        configuration.setAllowedOrigins(
+                List.of("http://localhost:3435", "https://flower-plus.vercel.app", "https://api.flowerplus.site",
+                        "https://flower.autopass.blog", "https://flowerplus.site", "https://flowerplus.vercel.app"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
@@ -86,6 +88,5 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
-
 
 }

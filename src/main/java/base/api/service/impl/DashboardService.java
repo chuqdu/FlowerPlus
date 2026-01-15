@@ -2,12 +2,16 @@ package base.api.service.impl;
 
 import base.api.dto.response.SummaryDto;
 import base.api.repository.IOrderRepository;
+import base.api.repository.IOrderItemRepository;
 import base.api.repository.IProductRepository;
 import base.api.repository.ITransactionRepository;
 import base.api.repository.IUserRepository;
 import base.api.service.IDashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +21,7 @@ public class DashboardService implements IDashboardService {
     private final IProductRepository productRepository;
     private final IOrderRepository orderRepository;
     private final ITransactionRepository transactionRepository;
+    private final IOrderItemRepository orderItemRepository;
 
     @Override
     public SummaryDto getSummary() {
@@ -25,18 +30,24 @@ public class DashboardService implements IDashboardService {
         summaryDto.setTotalUsers(userRepository.count());
         summaryDto.setTotalProducts(productRepository.count());
         summaryDto.setTotalOrders(orderRepository.count());
-        
+
         Double totalRevenue = transactionRepository.getTotalRevenue();
         Double totalRefunded = transactionRepository.getTotalRefunded();
         summaryDto.setTotalRevenue(totalRevenue != null ? totalRevenue : 0.0);
         summaryDto.setTotalRefunded(totalRefunded != null ? totalRefunded : 0.0);
-        summaryDto.setNetRevenue((totalRevenue != null ? totalRevenue : 0.0) - (totalRefunded != null ? totalRefunded : 0.0));
+        summaryDto.setNetRevenue(
+                (totalRevenue != null ? totalRevenue : 0.0) - (totalRefunded != null ? totalRefunded : 0.0));
 
-        summaryDto.setSuccessfulOrders(orderRepository.countSuccessfulOrders() != null ? orderRepository.countSuccessfulOrders() : 0L);
-        summaryDto.setDeliveringOrders(orderRepository.countDeliveringOrders() != null ? orderRepository.countDeliveringOrders() : 0L);
-        summaryDto.setPendingOrders(orderRepository.countPendingOrders() != null ? orderRepository.countPendingOrders() : 0L);
-        summaryDto.setFailedOrders(orderRepository.countFailedOrders() != null ? orderRepository.countFailedOrders() : 0L);
-        summaryDto.setRefundedOrders(orderRepository.countRefundedOrders() != null ? orderRepository.countRefundedOrders() : 0L);
+        summaryDto.setSuccessfulOrders(
+                orderRepository.countSuccessfulOrders() != null ? orderRepository.countSuccessfulOrders() : 0L);
+        summaryDto.setDeliveringOrders(
+                orderRepository.countDeliveringOrders() != null ? orderRepository.countDeliveringOrders() : 0L);
+        summaryDto.setPendingOrders(
+                orderRepository.countPendingOrders() != null ? orderRepository.countPendingOrders() : 0L);
+        summaryDto.setFailedOrders(
+                orderRepository.countFailedOrders() != null ? orderRepository.countFailedOrders() : 0L);
+        summaryDto.setRefundedOrders(
+                orderRepository.countRefundedOrders() != null ? orderRepository.countRefundedOrders() : 0L);
 
         summaryDto.setOrderAmountsByStatus(orderRepository.getOrderAmountsByStatus());
         summaryDto.setMonthlyOrders(orderRepository.countMonthlyOrders());
@@ -44,9 +55,15 @@ public class DashboardService implements IDashboardService {
         summaryDto.setYearlyOrders(orderRepository.countYearlyOrders());
         summaryDto.setMonthlyRevenue(transactionRepository.getMonthlyRevenue());
         summaryDto.setYearlyRevenue(transactionRepository.getYearlyRevenue());
+        summaryDto.setQuarterlyRevenue(transactionRepository.getQuarterlyRevenue());
+        summaryDto.setBestSellerProducts(orderItemRepository.getBestSellerProducts(10));
         summaryDto.setTopCustomers(orderRepository.getTopCustomers());
 
         return summaryDto;
     }
-}
 
+    @Override
+    public List<Map<String, Object>> getQuarterlyRevenueByYear(Integer year) {
+        return transactionRepository.getQuarterlyRevenueByYear(year);
+    }
+}

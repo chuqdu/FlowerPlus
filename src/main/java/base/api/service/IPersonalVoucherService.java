@@ -26,7 +26,7 @@ public interface IPersonalVoucherService {
     
     // Admin management methods
     Page<PersonalVoucherResponseDto> getAllPersonalVouchers(Pageable pageable);
-    Page<PersonalVoucherResponseDto> getPersonalVouchersWithFilters(Long userId, Boolean isUsed, String createdBy, Pageable pageable);
+    Page<PersonalVoucherResponseDto> getPersonalVouchersWithFilters(Long userId, Boolean isUsed, String createdBy, String searchTerm, Pageable pageable);
     List<PersonalVoucherResponseDto> getPersonalVouchersByVoucherId(Long voucherId);
     
     // Voucher lifecycle management

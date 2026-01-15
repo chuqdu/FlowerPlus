@@ -242,4 +242,23 @@ public class OrderController extends BaseAPIController {
         }
     }
 
+    @PutMapping("/{orderId}/request-delivery-time")
+    public ResponseEntity<TFUResponse<String>> updateRequestDeliveryTime(
+            @PathVariable Long orderId,
+            @RequestBody Map<String, String> body
+    ) {
+        try {
+            String requestDeliveryTimeStr = body.get("requestDeliveryTime");
+            if (requestDeliveryTimeStr == null || requestDeliveryTimeStr.isEmpty()) {
+                return badRequest("requestDeliveryTime is required");
+            }
+            
+            java.time.LocalDateTime requestDeliveryTime = java.time.LocalDateTime.parse(requestDeliveryTimeStr);
+            orderService.updateRequestDeliveryTime(orderId, requestDeliveryTime);
+            return success("Cập nhật thời gian giao hàng thành công");
+        } catch (Exception e) {
+            return badRequest(e.getMessage());
+        }
+    }
+
 }

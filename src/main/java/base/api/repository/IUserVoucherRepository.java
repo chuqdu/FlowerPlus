@@ -77,9 +77,16 @@ public interface IUserVoucherRepository extends JpaRepository<UserVoucherModel, 
            "(:userId IS NULL OR uv.user.id = :userId) " +
            "AND (:isUsed IS NULL OR uv.isUsed = :isUsed) " +
            "AND (:createdBy IS NULL OR uv.createdBy = :createdBy) " +
+           "AND (:searchTerm IS NULL OR " +
+           "     LOWER(uv.user.userName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "     LOWER(uv.user.email) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "     LOWER(uv.user.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "     LOWER(uv.user.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "     LOWER(CONCAT(uv.user.firstName, ' ', uv.user.lastName)) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
            "ORDER BY uv.assignedAt DESC")
     Page<UserVoucherModel> findWithFilters(@Param("userId") Long userId, 
                                           @Param("isUsed") Boolean isUsed, 
-                                          @Param("createdBy") String createdBy, 
+                                          @Param("createdBy") String createdBy,
+                                          @Param("searchTerm") String searchTerm,
                                           Pageable pageable);
 }

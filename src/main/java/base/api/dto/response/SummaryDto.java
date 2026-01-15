@@ -25,5 +25,7 @@ public class SummaryDto {
     private List<Map<String, Object>> yearlyOrders;
     private List<Map<String, Object>> monthlyRevenue;
     private List<Map<String, Object>> yearlyRevenue;
+    private List<Map<String, Object>> quarterlyRevenue;
+    private List<Map<String, Object>> bestSellerProducts;
     private List<Map<String, Object>> topCustomers;
 }
