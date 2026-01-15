@@ -44,7 +44,8 @@ public class SecurityConfig {
             "/api/auth/forgot-password/complete",
             "/api/auth/verify-email",
             "/ws/**",
-            "/api/orders/webhook-payos"
+            "/api/orders/webhook-payos",
+            "/api/ai/orders/**"
     };
 
     @Bean

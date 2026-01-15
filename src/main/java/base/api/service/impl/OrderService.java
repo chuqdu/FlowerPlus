@@ -2,7 +2,6 @@ package base.api.service.impl;
 
 import base.api.dto.request.AddTransactionToOrderDto;
 import base.api.dto.request.CheckoutDto;
-import base.api.dto.request.OrderDto;
 import base.api.entity.*;
 import base.api.enums.DeliveryStep;
 import base.api.repository.*;
@@ -65,6 +64,7 @@ public class OrderService implements IOrderService {
     @Autowired private IDeliveryStatusService deliveryStatusService;
     @Autowired private IVoucherService voucherService;
     @Autowired private IVoucherRepository voucherRepo;
+    @Autowired private base.api.repository.IDeliveryAddressRepository deliveryAddressRepository;
 
     @Transactional
     @Override
@@ -564,5 +564,102 @@ public class OrderService implements IOrderService {
         
         order.setRequestDeliveryTime(requestDeliveryTime);
         orderRepo.save(order);
+    }
+
+    @Override
+    @Transactional
+    public String createOrderForAi(base.api.dto.request.AiCreateOrderDto dto) throws Exception {
+        // Lấy thông tin user
+        UserModel user = userRepository.findById(dto.getUserId())
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + dto.getUserId()));
+        
+        // Lấy thông tin product
+        ProductModel product = productRepository.findById(dto.getProductId())
+                .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + dto.getProductId()));
+        
+        // Lấy địa chỉ mặc định của user
+        DeliveryAddressModel defaultAddress = deliveryAddressRepository
+                .findByUserIdAndIsDefaultTrue(dto.getUserId())
+                .stream()
+                .findFirst()
+                .orElse(null);
+        
+        // Tạo order
+        OrderModel order = new OrderModel();
+        order.setUser(user);
+        order.setOrderCode(String.valueOf(System.currentTimeMillis() / 1000));
+        order.setNote("Đơn hàng được tạo tự động bởi AI");
+        
+        // Sử dụng thông tin từ địa chỉ mặc định nếu có, nếu không dùng thông tin từ user
+        if (defaultAddress != null) {
+            order.setShippingAddress(defaultAddress.getAddress());
+            order.setPhoneNumber(defaultAddress.getPhoneNumber());
+            order.setRecipientName(defaultAddress.getRecipientName());
+        } else {
+            // Fallback: sử dụng thông tin từ user
+            order.setShippingAddress("Chưa có địa chỉ");
+            order.setPhoneNumber(user.getPhone() != null ? user.getPhone() : "");
+            String recipientName = (user.getFirstName() != null ? user.getFirstName() : "") + 
+                " " + 
+                (user.getLastName() != null ? user.getLastName() : "");
+            order.setRecipientName(recipientName.trim());
+        }
+        
+        // Thời gian giao hàng mặc định: 2 ngày sau
+        order.setRequestDeliveryTime(LocalDateTime.now().plusDays(2));
+        
+        // Thêm sản phẩm vào order
+        int quantity = dto.getQuantity() != null && dto.getQuantity() > 0 ? dto.getQuantity() : 1;
+        order.addItem(OrderItemModel.of(
+                product.getId(),
+                product.getName(),
+                product.getImages(),
+                product.getPrice(),
+                quantity
+        ));
+        
+        // Tính tổng tiền
+        order.recalcTotal();
+        orderRepo.save(order);
+        
+        // Tạo delivery status
+        deliveryStatusService.setCurrentStepCascading(
+                order.getId(),
+                DeliveryStep.PENDING_CONFIRMATION,
+                "Đơn hàng được tạo tự động bởi AI. Vui lòng thanh toán để xác nhận đơn hàng.",
+                "",
+                "",
+                dto.getUserId()
+        );
+        
+        // Tạo payment link
+        long amount = (long) order.getTotal();
+        long transactionCode = System.currentTimeMillis() / 1000;
+        
+        String returnUrl = "https://flowerplus.site/payment/success";
+        String cancelUrl = "https://flowerplus.site/payment/failure";
+        
+        CreatePaymentLinkRequest paymentData =
+                CreatePaymentLinkRequest.builder()
+                        .orderCode(transactionCode)
+                        .amount(amount)
+                        .description("Thanh toan don hang AI")
+                        .returnUrl(returnUrl)
+                        .cancelUrl(cancelUrl)
+                        .build();
+        
+        CreatePaymentLinkResponse result = payOS.paymentRequests().create(paymentData);
+        
+        // Lưu transaction
+        TransactionModel tx = new TransactionModel();
+        tx.setOrder(order);
+        tx.setOrderCode(String.valueOf(transactionCode));
+        tx.setAmount(order.getTotal());
+        tx.setStatus("PENDING");
+        tx.setCheckoutUrl(result.getCheckoutUrl());
+        tx.setPaymentLinkId(result.getPaymentLinkId());
+        txRepo.save(tx);
+        
+        return result.getCheckoutUrl();
     }
 }
