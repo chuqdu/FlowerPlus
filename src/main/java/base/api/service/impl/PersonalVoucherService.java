@@ -189,8 +189,8 @@ public class PersonalVoucherService implements IPersonalVoucherService {
     }
 
     @Override
-    public Page<PersonalVoucherResponseDto> getPersonalVouchersWithFilters(Long userId, Boolean isUsed, String createdBy, Pageable pageable) {
-        Page<UserVoucherModel> userVouchers = userVoucherRepo.findWithFilters(userId, isUsed, createdBy, pageable);
+    public Page<PersonalVoucherResponseDto> getPersonalVouchersWithFilters(Long userId, Boolean isUsed, String createdBy, String searchTerm, Pageable pageable) {
+        Page<UserVoucherModel> userVouchers = userVoucherRepo.findWithFilters(userId, isUsed, createdBy, searchTerm, pageable);
         return userVouchers.map(this::toPersonalVoucherResponseDto);
     }
 
@@ -309,6 +309,9 @@ public class PersonalVoucherService implements IPersonalVoucherService {
         dto.setUsageLimit(voucher.getUsageLimit());
         dto.setUsedCount(voucher.getUsedCount());
         dto.setApplyAllProducts(voucher.getApplyAllProducts());
+        if (voucher.getProducts() != null && !voucher.getProducts().isEmpty()) {
+            dto.setProductIds(voucher.getProducts().stream().map(base.api.entity.ProductModel::getId).collect(Collectors.toSet()));
+        }
         
         // Computed fields
         dto.setIsExpired(userVoucher.isExpired());

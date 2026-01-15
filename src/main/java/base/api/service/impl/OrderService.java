@@ -555,4 +555,14 @@ public class OrderService implements IOrderService {
         }
         return dto;
     }
+
+    @Override
+    @Transactional
+    public void updateRequestDeliveryTime(Long orderId, LocalDateTime requestDeliveryTime) throws Exception {
+        OrderModel order = orderRepo.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Order not found: " + orderId));
+        
+        order.setRequestDeliveryTime(requestDeliveryTime);
+        orderRepo.save(order);
+    }
 }
