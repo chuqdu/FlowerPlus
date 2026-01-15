@@ -185,9 +185,9 @@ public class UserService implements IUserService {
 
         boolean shouldBeDefault = dto.isDefault();
         address.setDefault(shouldBeDefault);
+        List<DeliveryAddressModel> others = deliveryAddressRepository.findByUserId(userId);
 
-        if (shouldBeDefault) {
-            List<DeliveryAddressModel> others = deliveryAddressRepository.findByUserId(userId);
+        if (shouldBeDefault && !others.isEmpty()) {
             for (DeliveryAddressModel it : others) {
                 if (it.getId() != null && !it.getId().equals(address.getId()) && it.isDefault()) {
                     it.setDefault(false);
