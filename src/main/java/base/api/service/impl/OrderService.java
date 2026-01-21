@@ -23,6 +23,7 @@ import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class OrderService implements IOrderService {
@@ -102,13 +103,11 @@ public class OrderService implements IOrderService {
         if (dto.getVoucherCode() != null && !dto.getVoucherCode().isBlank()) {
             var validate = voucherService.validateForCart(dto.getUserId(), dto.getVoucherCode());
             if (validate.isValid()) {
-                order.setVoucherCode(dto.getVoucherCode());
-                order.setDiscountAmount(validate.getDiscountAmount());
-                voucherRepo.findByCodeIgnoreCase(dto.getVoucherCode()).ifPresent(v -> {
-                    order.setVoucher(v);
-                    v.setUsedCount((v.getUsedCount() == null ? 0 : v.getUsedCount()) + 1);
-                    voucherRepo.save(v);
-                });
+                // Apply voucher với kiểm tra usage limit thread-safe
+                VoucherModel voucher = applyVoucherToOrder(order, dto.getVoucherCode(), validate.getDiscountAmount());
+                if (voucher == null) {
+                    throw new IllegalStateException("Voucher đã hết lượt sử dụng");
+                }
             }
         }
         order.recalcTotal();
@@ -195,13 +194,11 @@ public class OrderService implements IOrderService {
             x.setQuantity(dto.getQuantity());
             var validate = voucherService.validateForItems(dto.getVoucherCode(), java.util.List.of(x));
             if (validate.isValid()) {
-                order.setVoucherCode(dto.getVoucherCode());
-                order.setDiscountAmount(validate.getDiscountAmount());
-                voucherRepo.findByCodeIgnoreCase(dto.getVoucherCode()).ifPresent(v -> {
-                    order.setVoucher(v);
-                    v.setUsedCount((v.getUsedCount() == null ? 0 : v.getUsedCount()) + 1);
-                    voucherRepo.save(v);
-                });
+                // Apply voucher với kiểm tra usage limit thread-safe
+                VoucherModel voucher = applyVoucherToOrder(order, dto.getVoucherCode(), validate.getDiscountAmount());
+                if (voucher == null) {
+                    throw new IllegalStateException("Voucher đã hết lượt sử dụng");
+                }
             }
         }
 
@@ -1004,5 +1001,42 @@ public class OrderService implements IOrderService {
         txRepo.save(tx);
 
         return result.getCheckoutUrl();
+    }
+
+    /**
+     * Apply voucher to order với kiểm tra usage limit thread-safe
+     * @param order Order cần apply voucher
+     * @param voucherCode Mã voucher
+     * @param discountAmount Số tiền giảm giá
+     * @return VoucherModel nếu apply thành công, null nếu voucher đã hết lượt sử dụng
+     */
+    @Transactional
+    private synchronized VoucherModel applyVoucherToOrder(OrderModel order, String voucherCode, Double discountAmount) {
+        // Reload voucher từ DB để có dữ liệu mới nhất (tránh race condition)
+        Optional<VoucherModel> voucherOpt = voucherRepo.findByCodeIgnoreCase(voucherCode);
+        if (voucherOpt.isEmpty()) {
+            return null;
+        }
+        
+        VoucherModel voucher = voucherOpt.get();
+        
+        // Kiểm tra lại usage limit trước khi tăng usedCount
+        if (voucher.getUsageLimit() != null && voucher.getUsedCount() != null) {
+            if (voucher.getUsedCount() >= voucher.getUsageLimit()) {
+                // Voucher đã hết lượt sử dụng
+                return null;
+            }
+        }
+        
+        // Apply voucher vào order
+        order.setVoucherCode(voucherCode);
+        order.setDiscountAmount(discountAmount);
+        order.setVoucher(voucher);
+        
+        // Tăng usedCount
+        voucher.setUsedCount((voucher.getUsedCount() == null ? 0 : voucher.getUsedCount()) + 1);
+        voucherRepo.save(voucher);
+        
+        return voucher;
     }
 }
