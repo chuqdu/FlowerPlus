@@ -55,5 +55,7 @@ public interface IUserRepository extends JpaRepository<UserModel, Long>, JpaSpec
 
     int countByCreatedAtAfter(LocalDateTime after);
 
+    List<UserModel> findByRole(UserRole role);
+
 
 }

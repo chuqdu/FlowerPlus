@@ -4,6 +4,7 @@ import base.api.dto.request.AddTransactionToOrderDto;
 import base.api.dto.request.CheckoutDto;
 import base.api.entity.*;
 import base.api.enums.DeliveryStep;
+import base.api.enums.UserRole;
 import base.api.repository.*;
 import base.api.service.ICartService;
 import base.api.service.IDeliveryStatusService;
@@ -288,6 +289,239 @@ public class OrderService implements IOrderService {
                 product.setStock(newStock);
                 productRepository.save(product);
             }
+        }
+
+        // Gửi email thông báo thanh toán thành công
+        sendPaymentSuccessEmailToCustomer(order);
+        sendNewOrderNotificationToShopOwners(order);
+    }
+
+    /**
+     * Gửi email thông báo thanh toán thành công cho customer
+     */
+    private void sendPaymentSuccessEmailToCustomer(OrderModel order) {
+        try {
+            UserModel user = order.getUser();
+            String fullName = (user.getFirstName() != null ? user.getFirstName() : "") + 
+                            (user.getLastName() != null ? " " + user.getLastName() : "");
+            if(fullName.trim().isEmpty()) {
+                fullName = user.getUserName();
+            }
+
+            String formattedAmount = String.format("%,.0f", order.getTotal());
+            String subject = "✅ Thanh toán thành công - Đơn hàng #" + order.getOrderCode();
+            
+            // Tạo danh sách sản phẩm
+            StringBuilder itemsHtml = new StringBuilder();
+            for (OrderItemModel item : order.getItems()) {
+                itemsHtml.append(String.format(
+                    "<tr style='border-bottom: 1px solid #e0e0e0;'>" +
+                    "<td style='padding: 10px;'>%s</td>" +
+                    "<td style='padding: 10px; text-align: center;'>%d</td>" +
+                    "<td style='padding: 10px; text-align: right;'>%,.0f VNĐ</td>" +
+                    "<td style='padding: 10px; text-align: right; font-weight: bold;'>%,.0f VNĐ</td>" +
+                    "</tr>",
+                    item.getProductName(),
+                    item.getQuantity(),
+                    item.getUnitPrice(),
+                    item.getLineTotal()
+                ));
+            }
+            
+            String body = String.format(
+                "<html>" +
+                "<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>" +
+                "<div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;'>" +
+                "<div style='text-align: center; margin-bottom: 30px;'>" +
+                "<h1 style='color: #e91e63; margin: 0;'>🌸 FlowerPlus 🌸</h1>" +
+                "</div>" +
+                "<h2 style='color: #4caf50;'>✅ Thanh toán thành công!</h2>" +
+                "<p>Xin chào <strong>%s</strong>,</p>" +
+                "<p>Cảm ơn bạn đã mua sắm tại FlowerPlus! Đơn hàng <strong>#%s</strong> của bạn đã được thanh toán thành công.</p>" +
+                "<div style='background-color: #e8f5e9; border-left: 4px solid #4caf50; padding: 15px; margin: 20px 0;'>" +
+                "<h3 style='color: #2e7d32; margin-top: 0;'>Thông tin đơn hàng:</h3>" +
+                "<p><strong>Mã đơn hàng:</strong> #%s</p>" +
+                "<p><strong>Tổng tiền:</strong> %s VNĐ</p>" +
+                "<p><strong>Địa chỉ giao hàng:</strong> %s</p>" +
+                "<p><strong>Người nhận:</strong> %s</p>" +
+                "<p><strong>Số điện thoại:</strong> %s</p>" +
+                "%s" +
+                "</div>" +
+                "<div style='margin: 20px 0;'>" +
+                "<h3 style='color: #333; margin-bottom: 15px;'>Danh sách sản phẩm:</h3>" +
+                "<table style='width: 100%%; border-collapse: collapse;'>" +
+                "<thead>" +
+                "<tr style='background-color: #f5f5f5; border-bottom: 2px solid #e0e0e0;'>" +
+                "<th style='padding: 10px; text-align: left;'>Sản phẩm</th>" +
+                "<th style='padding: 10px; text-align: center;'>Số lượng</th>" +
+                "<th style='padding: 10px; text-align: right;'>Đơn giá</th>" +
+                "<th style='padding: 10px; text-align: right;'>Thành tiền</th>" +
+                "</tr>" +
+                "</thead>" +
+                "<tbody>%s</tbody>" +
+                "</table>" +
+                "</div>" +
+                "%s" +
+                "<div style='text-align: center; margin: 30px 0;'>" +
+                "<a href='https://flowerplus.site/profile' style='background-color: #e91e63; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;'>Xem chi tiết đơn hàng</a>" +
+                "</div>" +
+                "<p style='color: #666; font-size: 14px;'>Chúng tôi sẽ chuẩn bị và giao hàng cho bạn trong thời gian sớm nhất. Nếu bạn có bất kỳ câu hỏi nào, đừng ngần ngại liên hệ với chúng tôi.</p>" +
+                "<hr style='border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;'>" +
+                "<p style='color: #999; font-size: 12px; text-align: center;'>© 2024 FlowerPlus. All rights reserved.</p>" +
+                "</div>" +
+                "</body>" +
+                "</html>",
+                fullName,
+                order.getOrderCode(),
+                order.getOrderCode(),
+                formattedAmount,
+                order.getShippingAddress() != null ? order.getShippingAddress() : "Chưa có địa chỉ",
+                order.getRecipientName() != null ? order.getRecipientName() : fullName,
+                order.getPhoneNumber() != null ? order.getPhoneNumber() : "Chưa có",
+                order.getRequestDeliveryTime() != null ? 
+                    "<p><strong>Thời gian yêu cầu giao hàng:</strong> " + 
+                    order.getRequestDeliveryTime().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) + 
+                    "</p>" : "",
+                itemsHtml.toString(),
+                order.getDiscountAmount() > 0 ? 
+                    String.format(
+                        "<div style='background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;'>" +
+                        "<p><strong>Mã giảm giá:</strong> %s</p>" +
+                        "<p><strong>Giảm giá:</strong> %,.0f VNĐ</p>" +
+                        "</div>",
+                        order.getVoucherCode() != null ? order.getVoucherCode() : "",
+                        order.getDiscountAmount()
+                    ) : ""
+            );
+            
+            emailService.sendHtmlEmail(user.getEmail(), subject, body);
+        } catch (Exception e) {
+            System.err.println("Failed to send payment success email to customer: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Gửi email thông báo đơn hàng mới cho tất cả shop owners
+     */
+    private void sendNewOrderNotificationToShopOwners(OrderModel order) {
+        try {
+            // Lấy danh sách tất cả shop owners
+            List<UserModel> shopOwners = userRepository.findByRole(UserRole.SHOP_OWNER);
+            
+            if (shopOwners.isEmpty()) {
+                return; // Không có shop owner nào thì không cần gửi email
+            }
+
+            UserModel customer = order.getUser();
+            String customerFullName = (customer.getFirstName() != null ? customer.getFirstName() : "") + 
+                                    (customer.getLastName() != null ? " " + customer.getLastName() : "");
+            if(customerFullName.trim().isEmpty()) {
+                customerFullName = customer.getUserName();
+            }
+
+            String formattedAmount = String.format("%,.0f", order.getTotal());
+            String subject = "🛒 Đơn hàng mới - #" + order.getOrderCode() + " cần chuẩn bị";
+            
+            // Tạo danh sách sản phẩm
+            StringBuilder itemsHtml = new StringBuilder();
+            for (OrderItemModel item : order.getItems()) {
+                itemsHtml.append(String.format(
+                    "<tr style='border-bottom: 1px solid #e0e0e0;'>" +
+                    "<td style='padding: 10px;'>%s</td>" +
+                    "<td style='padding: 10px; text-align: center;'>%d</td>" +
+                    "<td style='padding: 10px; text-align: right;'>%,.0f VNĐ</td>" +
+                    "<td style='padding: 10px; text-align: right; font-weight: bold;'>%,.0f VNĐ</td>" +
+                    "</tr>",
+                    item.getProductName(),
+                    item.getQuantity(),
+                    item.getUnitPrice(),
+                    item.getLineTotal()
+                ));
+            }
+            
+            String body = String.format(
+                "<html>" +
+                "<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>" +
+                "<div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;'>" +
+                "<div style='text-align: center; margin-bottom: 30px;'>" +
+                "<h1 style='color: #e91e63; margin: 0;'>🌸 FlowerPlus 🌸</h1>" +
+                "</div>" +
+                "<h2 style='color: #2196f3;'>🛒 Đơn hàng mới cần chuẩn bị</h2>" +
+                "<p>Xin chào Shop Owner,</p>" +
+                "<p>Bạn có một đơn hàng mới <strong>#%s</strong> đã được thanh toán thành công và cần được chuẩn bị.</p>" +
+                "<div style='background-color: #e3f2fd; border-left: 4px solid #2196f3; padding: 15px; margin: 20px 0;'>" +
+                "<h3 style='color: #1565c0; margin-top: 0;'>Thông tin khách hàng:</h3>" +
+                "<p><strong>Tên khách hàng:</strong> %s</p>" +
+                "<p><strong>Số điện thoại:</strong> %s</p>" +
+                "<p><strong>Email:</strong> %s</p>" +
+                "</div>" +
+                "<div style='background-color: #f9f9f9; border-left: 4px solid #666; padding: 15px; margin: 20px 0;'>" +
+                "<h3 style='color: #333; margin-top: 0;'>Thông tin đơn hàng:</h3>" +
+                "<p><strong>Mã đơn hàng:</strong> #%s</p>" +
+                "<p><strong>Tổng tiền:</strong> %s VNĐ</p>" +
+                "<p><strong>Địa chỉ giao hàng:</strong> %s</p>" +
+                "<p><strong>Người nhận:</strong> %s</p>" +
+                "%s" +
+                "%s" +
+                "</div>" +
+                "<div style='margin: 20px 0;'>" +
+                "<h3 style='color: #333; margin-bottom: 15px;'>Danh sách sản phẩm:</h3>" +
+                "<table style='width: 100%%; border-collapse: collapse;'>" +
+                "<thead>" +
+                "<tr style='background-color: #f5f5f5; border-bottom: 2px solid #e0e0e0;'>" +
+                "<th style='padding: 10px; text-align: left;'>Sản phẩm</th>" +
+                "<th style='padding: 10px; text-align: center;'>Số lượng</th>" +
+                "<th style='padding: 10px; text-align: right;'>Đơn giá</th>" +
+                "<th style='padding: 10px; text-align: right;'>Thành tiền</th>" +
+                "</tr>" +
+                "</thead>" +
+                "<tbody>%s</tbody>" +
+                "</table>" +
+                "</div>" +
+                "<div style='background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;'>" +
+                "<h3 style='color: #856404; margin-top: 0;'>⚠️ Lưu ý</h3>" +
+                "<p style='margin: 0;'>Vui lòng chuẩn bị đơn hàng và cập nhật trạng thái trong hệ thống quản lý đơn hàng.</p>" +
+                "</div>" +
+                "<div style='text-align: center; margin: 30px 0;'>" +
+                "<a href='https://flowerplus.site/admin/orders' style='background-color: #e91e63; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;'>Quản lý đơn hàng</a>" +
+                "</div>" +
+                "<p style='color: #666; font-size: 14px;'>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi.</p>" +
+                "<hr style='border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;'>" +
+                "<p style='color: #999; font-size: 12px; text-align: center;'>© 2024 FlowerPlus. All rights reserved.</p>" +
+                "</div>" +
+                "</body>" +
+                "</html>",
+                order.getOrderCode(),
+                customerFullName,
+                order.getPhoneNumber() != null ? order.getPhoneNumber() : (customer.getPhone() != null ? customer.getPhone() : "Chưa có"),
+                customer.getEmail() != null ? customer.getEmail() : "Chưa có",
+                order.getOrderCode(),
+                formattedAmount,
+                order.getShippingAddress() != null ? order.getShippingAddress() : "Chưa có địa chỉ",
+                order.getRecipientName() != null ? order.getRecipientName() : customerFullName,
+                order.getRequestDeliveryTime() != null ? 
+                    "<p><strong>Thời gian yêu cầu giao hàng:</strong> " + 
+                    order.getRequestDeliveryTime().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) + 
+                    "</p>" : "",
+                order.getNote() != null && !order.getNote().isEmpty() ?
+                    "<p><strong>Ghi chú:</strong> " + order.getNote() + "</p>" : "",
+                itemsHtml.toString()
+            );
+            
+            // Gửi email cho tất cả shop owners
+            for (UserModel shopOwner : shopOwners) {
+                if (shopOwner.getEmail() != null && !shopOwner.getEmail().isEmpty()) {
+                    try {
+                        emailService.sendHtmlEmail(shopOwner.getEmail(), subject, body);
+                    } catch (Exception e) {
+                        System.err.println("Failed to send new order notification to shop owner " + shopOwner.getEmail() + ": " + e.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to send new order notification to shop owners: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
