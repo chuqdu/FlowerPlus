@@ -13,6 +13,7 @@ public class OrderItemResponseDto {
     private String productName;
     private String productImage;
 
+
     private double unitPrice;
     private int quantity;
     private double lineTotal;

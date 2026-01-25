@@ -2,21 +2,22 @@ package base.api.controller;
 
 import base.api.base.BaseAPIController;
 import base.api.dto.request.*;
+import base.api.dto.response.OrderItemResponseDto;
 import base.api.dto.response.OrderResponseDto;
+import base.api.dto.response.ProductSummaryDto;
 import base.api.dto.response.TFUResponse;
+import base.api.entity.OrderItemModel;
 import base.api.entity.OrderModel;
+import base.api.entity.ProductModel;
 import base.api.service.IDeliveryStatusService;
 import base.api.service.IOrderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.parameters.P;
-import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.PaymentLink;
-import vn.payos.model.v2.paymentRequests.invoices.InvoicesInfo;
 import vn.payos.model.webhooks.Webhook;
 import vn.payos.model.webhooks.WebhookData;
 
@@ -86,7 +87,26 @@ public class OrderController extends BaseAPIController {
     public ResponseEntity<TFUResponse<List<OrderResponseDto>>> getListOrders() throws Exception {
         List<OrderModel> orderModels = orderService.getAllOrders();
         List<OrderResponseDto> orders = orderModels.stream()
-                .map(order -> mapper.map(order, OrderResponseDto.class))
+                .map(order -> {
+                    OrderResponseDto dto = mapper.map(order, OrderResponseDto.class);
+                    // Manually map product với isCustom field để đảm bảo isCustom được map đúng
+                    if (dto.getItems() != null && order.getItems() != null) {
+                        for (int i = 0; i < dto.getItems().size() && i < order.getItems().size(); i++) {
+                            OrderItemResponseDto itemDto = dto.getItems().get(i);
+                            OrderItemModel itemModel = order.getItems().get(i);
+                            
+                            // Load product nếu chưa được load (LAZY loading)
+                            ProductModel productModel = itemModel.getProduct();
+                            if (productModel != null) {
+                                ProductSummaryDto productDto = mapper.map(productModel, ProductSummaryDto.class);
+                                // Set isCustom explicitly để đảm bảo giá trị đúng
+                                productDto.setCustom(productModel.isCustom());
+                                itemDto.setProduct(productDto);
+                            }
+                        }
+                    }
+                    return dto;
+                })
                 .toList();
 
         return success(orders);
@@ -126,7 +146,24 @@ public class OrderController extends BaseAPIController {
         // Lấy lại danh sách orders sau khi có thể đã cập nhật
         orderModels = orderService.getOrdersByUserId(userId);
         List<OrderResponseDto> orders = orderModels.stream()
-                .map(order -> mapper.map(order, OrderResponseDto.class))
+                .map(order -> {
+                    OrderResponseDto dto = mapper.map(order, OrderResponseDto.class);
+                    // Manually map product với isCustom field để đảm bảo isCustom được map đúng
+                    if (dto.getItems() != null && order.getItems() != null) {
+                        for (int i = 0; i < dto.getItems().size() && i < order.getItems().size(); i++) {
+                            OrderItemResponseDto itemDto = dto.getItems().get(i);
+                            OrderItemModel itemModel = order.getItems().get(i);
+                            
+                            ProductModel productModel = itemModel.getProduct();
+                            if (productModel != null) {
+                                ProductSummaryDto productDto = mapper.map(productModel, ProductSummaryDto.class);
+                                productDto.setCustom(productModel.isCustom());
+                                itemDto.setProduct(productDto);
+                            }
+                        }
+                    }
+                    return dto;
+                })
                 .toList();
 
         return success(orders);
@@ -138,7 +175,24 @@ public class OrderController extends BaseAPIController {
         Long userId = getCurrentUserId();
         List<OrderModel> orderModels = orderService.getOrdersByUserIdAndVoucherId(userId, voucherId);
         List<OrderResponseDto> orders = orderModels.stream()
-                .map(order -> mapper.map(order, OrderResponseDto.class))
+                .map(order -> {
+                    OrderResponseDto dto = mapper.map(order, OrderResponseDto.class);
+                    // Manually map product với isCustom field để đảm bảo isCustom được map đúng
+                    if (dto.getItems() != null && order.getItems() != null) {
+                        for (int i = 0; i < dto.getItems().size() && i < order.getItems().size(); i++) {
+                            OrderItemResponseDto itemDto = dto.getItems().get(i);
+                            OrderItemModel itemModel = order.getItems().get(i);
+                            
+                            ProductModel productModel = itemModel.getProduct();
+                            if (productModel != null) {
+                                ProductSummaryDto productDto = mapper.map(productModel, ProductSummaryDto.class);
+                                productDto.setCustom(productModel.isCustom());
+                                itemDto.setProduct(productDto);
+                            }
+                        }
+                    }
+                    return dto;
+                })
                 .toList();
         return success(orders);
     }
