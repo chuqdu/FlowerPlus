@@ -2,21 +2,22 @@ package base.api.controller;
 
 import base.api.base.BaseAPIController;
 import base.api.dto.request.*;
+import base.api.dto.response.OrderItemResponseDto;
 import base.api.dto.response.OrderResponseDto;
+import base.api.dto.response.ProductSummaryDto;
 import base.api.dto.response.TFUResponse;
+import base.api.entity.OrderItemModel;
 import base.api.entity.OrderModel;
+import base.api.entity.ProductModel;
 import base.api.service.IDeliveryStatusService;
 import base.api.service.IOrderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.parameters.P;
-import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 import vn.payos.PayOS;
 import vn.payos.model.v2.paymentRequests.PaymentLink;
-import vn.payos.model.v2.paymentRequests.invoices.InvoicesInfo;
 import vn.payos.model.webhooks.Webhook;
 import vn.payos.model.webhooks.WebhookData;
 
@@ -55,7 +56,8 @@ public class OrderController extends BaseAPIController {
     }
 
     @PostMapping("checkout-product")
-    public ResponseEntity<TFUResponse<Map<String, Object>>> checkoutProduct(@RequestBody CheckoutDto dto) throws Exception {
+    public ResponseEntity<TFUResponse<Map<String, Object>>> checkoutProduct(@RequestBody CheckoutDto dto)
+            throws Exception {
         Long userId = getCurrentUserId();
         String returnUrl = "https://flowerplus.site/payment/success";
         String cancelUrl = "https://flowerplus.site/payment/failure";
@@ -70,8 +72,7 @@ public class OrderController extends BaseAPIController {
 
     @PostMapping("add-transaction-to-order")
     public ResponseEntity<TFUResponse<String>> addTransactionToOrder(
-            @RequestBody AddTransactionToOrderDto dto
-    ) throws Exception {
+            @RequestBody AddTransactionToOrderDto dto) throws Exception {
         Long userId = getCurrentUserId();
         String returnUrl = "https://flowerplus.site/payment/success";
         String cancelUrl = "https://flowerplus.site/payment/failure";
@@ -84,28 +85,46 @@ public class OrderController extends BaseAPIController {
 
     @GetMapping("get-list-orders")
     public ResponseEntity<TFUResponse<List<OrderResponseDto>>> getListOrders() throws Exception {
-    List<OrderModel> orderModels = orderService.getAllOrders();
-    List<OrderResponseDto> orders = orderModels.stream()
-            .map(order -> mapper.map(order, OrderResponseDto.class))
-            .toList();
+        List<OrderModel> orderModels = orderService.getAllOrders();
+        List<OrderResponseDto> orders = orderModels.stream()
+                .map(order -> {
+                    OrderResponseDto dto = mapper.map(order, OrderResponseDto.class);
+                    // Manually map product với isCustom field để đảm bảo isCustom được map đúng
+                    if (dto.getItems() != null && order.getItems() != null) {
+                        for (int i = 0; i < dto.getItems().size() && i < order.getItems().size(); i++) {
+                            OrderItemResponseDto itemDto = dto.getItems().get(i);
+                            OrderItemModel itemModel = order.getItems().get(i);
+                            
+                            // Load product nếu chưa được load (LAZY loading)
+                            ProductModel productModel = itemModel.getProduct();
+                            if (productModel != null) {
+                                ProductSummaryDto productDto = mapper.map(productModel, ProductSummaryDto.class);
+                                // Set isCustom explicitly để đảm bảo giá trị đúng
+                                productDto.setCustom(productModel.isCustom());
+                                itemDto.setProduct(productDto);
+                            }
+                        }
+                    }
+                    return dto;
+                })
+                .toList();
 
         return success(orders);
     }
-
 
     @GetMapping("get-list-orders-by-user")
     public ResponseEntity<TFUResponse<List<OrderResponseDto>>> getListOrderByUserId() throws Exception {
         Long userId = getCurrentUserId();
         List<OrderModel> orderModels = orderService.getOrdersByUserId(userId);
-        
+
         // Lọc các orders có payment chưa thành công và lấy 5 cái mới nhất
         List<OrderModel> pendingOrders = orderModels.stream()
-                .filter(order -> order.getTransaction() != null 
-                        && order.getTransaction().getStatus() != null 
+                .filter(order -> order.getTransaction() != null
+                        && order.getTransaction().getStatus() != null
                         && !"SUCCESS".equals(order.getTransaction().getStatus()))
                 .limit(5)
                 .toList();
-        
+
         // Kiểm tra và cập nhật payment status cho các orders chưa thành công
         for (OrderModel order : pendingOrders) {
             try {
@@ -117,15 +136,34 @@ public class OrderController extends BaseAPIController {
                     }
                 }
             } catch (Exception e) {
-                // Log error nhưng không throw để không ảnh hưởng đến việc trả về danh sách orders
-                System.err.println("Error checking payment status for order: " + order.getOrderCode() + " - " + e.getMessage());
+                // Log error nhưng không throw để không ảnh hưởng đến việc trả về danh sách
+                // orders
+                System.err.println(
+                        "Error checking payment status for order: " + order.getOrderCode() + " - " + e.getMessage());
             }
         }
-        
+
         // Lấy lại danh sách orders sau khi có thể đã cập nhật
         orderModels = orderService.getOrdersByUserId(userId);
         List<OrderResponseDto> orders = orderModels.stream()
-                .map(order -> mapper.map(order, OrderResponseDto.class))
+                .map(order -> {
+                    OrderResponseDto dto = mapper.map(order, OrderResponseDto.class);
+                    // Manually map product với isCustom field để đảm bảo isCustom được map đúng
+                    if (dto.getItems() != null && order.getItems() != null) {
+                        for (int i = 0; i < dto.getItems().size() && i < order.getItems().size(); i++) {
+                            OrderItemResponseDto itemDto = dto.getItems().get(i);
+                            OrderItemModel itemModel = order.getItems().get(i);
+                            
+                            ProductModel productModel = itemModel.getProduct();
+                            if (productModel != null) {
+                                ProductSummaryDto productDto = mapper.map(productModel, ProductSummaryDto.class);
+                                productDto.setCustom(productModel.isCustom());
+                                itemDto.setProduct(productDto);
+                            }
+                        }
+                    }
+                    return dto;
+                })
                 .toList();
 
         return success(orders);
@@ -137,7 +175,24 @@ public class OrderController extends BaseAPIController {
         Long userId = getCurrentUserId();
         List<OrderModel> orderModels = orderService.getOrdersByUserIdAndVoucherId(userId, voucherId);
         List<OrderResponseDto> orders = orderModels.stream()
-                .map(order -> mapper.map(order, OrderResponseDto.class))
+                .map(order -> {
+                    OrderResponseDto dto = mapper.map(order, OrderResponseDto.class);
+                    // Manually map product với isCustom field để đảm bảo isCustom được map đúng
+                    if (dto.getItems() != null && order.getItems() != null) {
+                        for (int i = 0; i < dto.getItems().size() && i < order.getItems().size(); i++) {
+                            OrderItemResponseDto itemDto = dto.getItems().get(i);
+                            OrderItemModel itemModel = order.getItems().get(i);
+                            
+                            ProductModel productModel = itemModel.getProduct();
+                            if (productModel != null) {
+                                ProductSummaryDto productDto = mapper.map(productModel, ProductSummaryDto.class);
+                                productDto.setCustom(productModel.isCustom());
+                                itemDto.setProduct(productDto);
+                            }
+                        }
+                    }
+                    return dto;
+                })
                 .toList();
         return success(orders);
     }
@@ -145,16 +200,14 @@ public class OrderController extends BaseAPIController {
     @PostMapping("/{orderId}/delivery-status/set")
     public ResponseEntity<TFUResponse<DeliveryStatusDto>> setStep(
             @PathVariable Long orderId,
-            @RequestBody DeliveryStatusCreateDto body
-    ) {
+            @RequestBody DeliveryStatusCreateDto body) {
         var dto = deliveryStatusService.setCurrentStepCascading(
                 orderId,
                 body.getStep(),
                 body.getNote(),
                 body.getLocation(),
                 body.getImageUrl(),
-                getCurrentUserId()
-                );
+                getCurrentUserId());
         return success(dto);
     }
 
@@ -162,8 +215,7 @@ public class OrderController extends BaseAPIController {
     public ResponseEntity<TFUResponse<String>> updateDeliveryStatusImage(
             @PathVariable Long orderId,
             @PathVariable Long deliveryStatusId,
-            @RequestBody Map<String, String> body
-    ) {
+            @RequestBody Map<String, String> body) {
         try {
             String imageUrl = body.get("imageUrl");
             deliveryStatusService.updateDeliveryStatusImage(deliveryStatusId, imageUrl);
@@ -175,28 +227,29 @@ public class OrderController extends BaseAPIController {
 
     /// Làm sao để khi người dùng tt thành công thì hệ thống biết -> webhook
     /// Làm sao để đảm bảo là webhook sẽ luôn đáng tin cậy
-    /// Khi check-sum key nó bị lộ thì sao. Payos -> trả về cho mình -> mình gọi thẳng lại cho payos để hỏi
+    /// Khi check-sum key nó bị lộ thì sao. Payos -> trả về cho mình -> mình gọi
+    /// thẳng lại cho payos để hỏi
 
     @PostMapping("/webhook-payos")
-    public ResponseEntity<TFUResponse<String>> handleWebhook(@RequestBody String rawJson){
-        try{
+    public ResponseEntity<TFUResponse<String>> handleWebhook(@RequestBody String rawJson) {
+        try {
             ObjectMapper objectMapper = new ObjectMapper();
             Webhook webhook = objectMapper.readValue(rawJson, Webhook.class);
-//            WebhookData data = payOS.webhooks().verify(webhook);
+            // WebhookData data = payOS.webhooks().verify(webhook);
             WebhookData data = webhook.getData();
 
             if ("00".equals(data.getCode())) {
                 String orderCode = String.valueOf(data.getOrderCode());
-                // Lấy thông tin thanh toán từ PayOS -> chủ động gọi lại -> đây có gọi là cơ chế polling để đảm bảo giao dịch sẽ luôn đúng (ko bị fake data)
+                // Lấy thông tin thanh toán từ PayOS -> chủ động gọi lại -> đây có gọi là cơ chế
+                // polling để đảm bảo giao dịch sẽ luôn đúng (ko bị fake data)
+                orderService.handlePaymentSuccess(String.valueOf(orderCode));
                 PaymentLink paymentInfo = payOS.paymentRequests().get(data.getOrderCode());
                 if ("PAID".equals(paymentInfo.getStatus().toString())) {
-                    orderService.handlePaymentSuccess(String.valueOf(orderCode));
                 }
-//                orderService.handlePaymentSuccess(String.valueOf(orderCode));
+                // orderService.handlePaymentSuccess(String.valueOf(orderCode));
             }
             return success(data.getCode());
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             return success("ok");
         }
     }
@@ -204,8 +257,7 @@ public class OrderController extends BaseAPIController {
     @PostMapping("/{orderId}/cancel")
     public ResponseEntity<TFUResponse<String>> cancelOrder(
             @PathVariable Long orderId,
-            @RequestBody base.api.dto.request.CancelOrderDto dto
-    ) {
+            @RequestBody base.api.dto.request.CancelOrderDto dto) {
         try {
             Long userId = getCurrentUserId();
             orderService.cancelOrder(orderId, userId, dto.getReason());
@@ -231,8 +283,7 @@ public class OrderController extends BaseAPIController {
     @PostMapping("/refund-requests/{refundId}/process")
     public ResponseEntity<TFUResponse<String>> processRefund(
             @PathVariable Long refundId,
-            @RequestBody base.api.dto.request.ProcessRefundDto dto
-    ) {
+            @RequestBody base.api.dto.request.ProcessRefundDto dto) {
         try {
             Long adminId = getCurrentUserId();
             orderService.processRefund(refundId, adminId, dto);
@@ -245,14 +296,13 @@ public class OrderController extends BaseAPIController {
     @PutMapping("/{orderId}/request-delivery-time")
     public ResponseEntity<TFUResponse<String>> updateRequestDeliveryTime(
             @PathVariable Long orderId,
-            @RequestBody Map<String, String> body
-    ) {
+            @RequestBody Map<String, String> body) {
         try {
             String requestDeliveryTimeStr = body.get("requestDeliveryTime");
             if (requestDeliveryTimeStr == null || requestDeliveryTimeStr.isEmpty()) {
                 return badRequest("requestDeliveryTime is required");
             }
-            
+
             java.time.LocalDateTime requestDeliveryTime = java.time.LocalDateTime.parse(requestDeliveryTimeStr);
             orderService.updateRequestDeliveryTime(orderId, requestDeliveryTime);
             return success("Cập nhật thời gian giao hàng thành công");

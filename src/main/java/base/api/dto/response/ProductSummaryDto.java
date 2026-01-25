@@ -12,6 +12,7 @@ public class ProductSummaryDto {
     private Long id;
     private String name;
     private String images;
+    private boolean isCustom;
     private double price;
     private List<ProductCompositionDto> compositions = new ArrayList<>();
 }

@@ -19,6 +19,7 @@ import base.api.service.IVoucherService;
 import jakarta.persistence.EntityNotFoundException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -141,7 +142,10 @@ public class VoucherService implements IVoucherService {
 
     @Override
     public List<VoucherResponseDto> list() {
-        return voucherRepo.findAll().stream().map(this::toDto).collect(Collectors.toList());
+        return voucherRepo.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -172,34 +176,35 @@ public class VoucherService implements IVoucherService {
     }
 
     @Override
-    public ValidateVoucherResponse validatePersonalVoucher(Long userId, String code, List<ValidateVoucherRequestItem> items) {
+    public ValidateVoucherResponse validatePersonalVoucher(Long userId, String code,
+            List<ValidateVoucherRequestItem> items) {
         ValidateVoucherResponse resp = new ValidateVoucherResponse();
-        
+
         // First check if this is a personal voucher for the user
         Optional<UserVoucherModel> userVoucherOpt = userVoucherRepo.findByVoucherCodeAndUserId(code, userId);
         if (userVoucherOpt.isEmpty()) {
             // Not a personal voucher for this user, try regular voucher validation
             return validateForItems(code, items);
         }
-        
+
         UserVoucherModel userVoucher = userVoucherOpt.get();
         VoucherModel voucher = userVoucher.getVoucher();
-        
+
         // Check if personal voucher is already used
         if (userVoucher.getIsUsed()) {
             resp.setValid(false);
             resp.setMessage("Voucher cá nhân đã được sử dụng");
             return resp;
         }
-        
+
         // Use the existing validation logic but with ownership check
         resp = validateVoucherLogic(voucher, items);
-        
+
         // If validation passes, mark it as personal voucher
         if (resp.isValid()) {
             resp.setMessage("Voucher cá nhân hợp lệ");
         }
-        
+
         return resp;
     }
 
@@ -292,12 +297,12 @@ public class VoucherService implements IVoucherService {
             if (!userVoucher.getIsUsed()) {
                 userVoucher.markAsUsed();
                 userVoucherRepo.save(userVoucher);
-                
+
                 // Also increment the voucher's used count
                 VoucherModel voucher = userVoucher.getVoucher();
                 voucher.setUsedCount((voucher.getUsedCount() != null ? voucher.getUsedCount() : 0) + 1);
                 voucherRepo.save(voucher);
-                
+
                 // Send usage confirmation notification
                 try {
                     notificationService.sendVoucherUsageConfirmation(userVoucher);

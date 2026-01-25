@@ -34,19 +34,19 @@ public class PersonalVoucherService implements IPersonalVoucherService {
 
     @Autowired
     private IUserVoucherRepository userVoucherRepo;
-    
+
     @Autowired
     private IVoucherRepository voucherRepo;
-    
+
     @Autowired
     private IUserRepository userRepo;
-    
+
     @Autowired
     private IVoucherService voucherService;
-    
+
     @Autowired
     private base.api.service.INotificationService notificationService;
-    
+
     @Autowired
     private ModelMapper mapper;
 
@@ -134,7 +134,7 @@ public class PersonalVoucherService implements IPersonalVoucherService {
                 error.setUserId(userId);
                 error.setErrorMessage(e.getMessage());
                 error.setErrorCode("CREATION_FAILED");
-                
+
                 // Try to get user name for better error reporting
                 try {
                     UserModel user = userRepo.findById(userId).orElse(null);
@@ -144,7 +144,7 @@ public class PersonalVoucherService implements IPersonalVoucherService {
                 } catch (Exception ignored) {
                     // Ignore if we can't get user name
                 }
-                
+
                 result.getErrors().add(error);
             }
         }
@@ -189,8 +189,10 @@ public class PersonalVoucherService implements IPersonalVoucherService {
     }
 
     @Override
-    public Page<PersonalVoucherResponseDto> getPersonalVouchersWithFilters(Long userId, Boolean isUsed, String createdBy, String searchTerm, Pageable pageable) {
-        Page<UserVoucherModel> userVouchers = userVoucherRepo.findWithFilters(userId, isUsed, createdBy, searchTerm, pageable);
+    public Page<PersonalVoucherResponseDto> getPersonalVouchersWithFilters(Long userId, Boolean isUsed,
+            String createdBy, String searchTerm, Pageable pageable) {
+        Page<UserVoucherModel> userVouchers = userVoucherRepo.findWithFilters(userId, isUsed, createdBy, searchTerm,
+                pageable);
         return userVouchers.map(this::toPersonalVoucherResponseDto);
     }
 
@@ -207,7 +209,7 @@ public class PersonalVoucherService implements IPersonalVoucherService {
     public void deactivatePersonalVoucher(Long userVoucherId, String deactivatedBy) {
         UserVoucherModel userVoucher = userVoucherRepo.findById(userVoucherId)
                 .orElseThrow(() -> new EntityNotFoundException("Personal voucher not found"));
-        
+
         if (!userVoucher.getIsUsed()) {
             userVoucher.setIsUsed(true);
             userVoucher.setUsedAt(LocalDateTime.now());
@@ -221,7 +223,7 @@ public class PersonalVoucherService implements IPersonalVoucherService {
     public void deactivateAllVouchersForUser(Long userId, String deactivatedBy) {
         List<UserVoucherModel> userVouchers = userVoucherRepo.findByUser_IdOrderByAssignedAtDesc(userId);
         LocalDateTime now = LocalDateTime.now();
-        
+
         for (UserVoucherModel userVoucher : userVouchers) {
             if (!userVoucher.getIsUsed()) {
                 userVoucher.setIsUsed(true);
@@ -235,7 +237,7 @@ public class PersonalVoucherService implements IPersonalVoucherService {
     public void sendVoucherAssignmentNotification(Long userVoucherId) {
         UserVoucherModel userVoucher = userVoucherRepo.findById(userVoucherId)
                 .orElseThrow(() -> new EntityNotFoundException("Personal voucher not found"));
-        
+
         notificationService.sendVoucherAssignmentNotification(userVoucher);
     }
 
@@ -243,9 +245,9 @@ public class PersonalVoucherService implements IPersonalVoucherService {
     public void sendExpirationReminders() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime tomorrow = now.plusDays(1);
-        
+
         List<UserVoucherModel> expiringSoon = userVoucherRepo.findVouchersExpiringSoon(now, tomorrow);
-        
+
         for (UserVoucherModel userVoucher : expiringSoon) {
             try {
                 notificationService.sendVoucherExpirationReminder(userVoucher);
@@ -259,7 +261,7 @@ public class PersonalVoucherService implements IPersonalVoucherService {
     public List<PersonalVoucherResponseDto> getVouchersExpiringSoon() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime tomorrow = now.plusDays(1);
-        
+
         List<UserVoucherModel> expiringSoon = userVoucherRepo.findVouchersExpiringSoon(now, tomorrow);
         return expiringSoon.stream()
                 .map(this::toPersonalVoucherResponseDto)
@@ -278,13 +280,13 @@ public class PersonalVoucherService implements IPersonalVoucherService {
             String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
             code = basePrefix + "-" + uuid;
         } while (voucherRepo.findByCodeIgnoreCase(code).isPresent());
-        
+
         return code;
     }
 
     private PersonalVoucherResponseDto toPersonalVoucherResponseDto(UserVoucherModel userVoucher) {
         PersonalVoucherResponseDto dto = new PersonalVoucherResponseDto();
-        
+
         // UserVoucher assignment info
         dto.setUserVoucherId(userVoucher.getId());
         dto.setUserId(userVoucher.getUser().getId());
@@ -294,7 +296,7 @@ public class PersonalVoucherService implements IPersonalVoucherService {
         dto.setIsUsed(userVoucher.getIsUsed());
         dto.setUsedAt(userVoucher.getUsedAt());
         dto.setCreatedBy(userVoucher.getCreatedBy());
-        
+
         // Voucher details
         VoucherModel voucher = userVoucher.getVoucher();
         dto.setVoucherId(voucher.getId());
@@ -310,28 +312,29 @@ public class PersonalVoucherService implements IPersonalVoucherService {
         dto.setUsedCount(voucher.getUsedCount());
         dto.setApplyAllProducts(voucher.getApplyAllProducts());
         if (voucher.getProducts() != null && !voucher.getProducts().isEmpty()) {
-            dto.setProductIds(voucher.getProducts().stream().map(base.api.entity.ProductModel::getId).collect(Collectors.toSet()));
+            dto.setProductIds(voucher.getProducts().stream().map(base.api.entity.ProductModel::getId)
+                    .collect(Collectors.toSet()));
         }
-        
+
         // Computed fields
         dto.setIsExpired(userVoucher.isExpired());
         dto.setIsActive(userVoucher.isActive());
         if (voucher.getUsageLimit() != null && voucher.getUsedCount() != null) {
             dto.setRemainingUsage(Math.max(0, voucher.getUsageLimit() - voucher.getUsedCount()));
         }
-        
+
         return dto;
     }
 
     private UserVoucherListDto toUserVoucherListDto(UserVoucherModel userVoucher) {
         UserVoucherListDto dto = new UserVoucherListDto();
-        
+
         // UserVoucher info
         dto.setUserVoucherId(userVoucher.getId());
         dto.setAssignedAt(userVoucher.getAssignedAt());
         dto.setIsUsed(userVoucher.getIsUsed());
         dto.setUsedAt(userVoucher.getUsedAt());
-        
+
         // Voucher details
         VoucherModel voucher = userVoucher.getVoucher();
         dto.setVoucherId(voucher.getId());
@@ -345,11 +348,11 @@ public class PersonalVoucherService implements IPersonalVoucherService {
         dto.setEndsAt(voucher.getEndsAt());
         dto.setUsageLimit(voucher.getUsageLimit());
         dto.setApplyAllProducts(voucher.getApplyAllProducts());
-        
+
         // Status info
         dto.setIsExpired(userVoucher.isExpired());
         dto.setIsActive(userVoucher.isActive());
-        
+
         // Determine status
         if (userVoucher.getIsUsed()) {
             dto.setStatus("USED");
@@ -360,12 +363,12 @@ public class PersonalVoucherService implements IPersonalVoucherService {
         } else {
             dto.setStatus("ACTIVE");
         }
-        
+
         // Days until expiry
         if (voucher.getEndsAt() != null && !userVoucher.isExpired()) {
             dto.setDaysUntilExpiry(ChronoUnit.DAYS.between(LocalDateTime.now(), voucher.getEndsAt()));
         }
-        
+
         return dto;
     }
 }

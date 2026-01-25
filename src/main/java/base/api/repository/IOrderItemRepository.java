@@ -27,7 +27,7 @@ public interface IOrderItemRepository
             "JOIN delivery_status ds ON ds.order_id = latest.order_id AND ds.event_at = latest.max_event " +
             "WHERE ds.step = 'DELIVERED' " +
             "GROUP BY p.id, p.name " +
-            "ORDER BY totalQuantity DESC " +
+            "ORDER BY totalRevenue DESC " +
             "LIMIT :limit", nativeQuery = true)
     List<Map<String, Object>> getBestSellerProducts(int limit);
 }
