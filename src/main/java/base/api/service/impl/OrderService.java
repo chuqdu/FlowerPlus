@@ -404,15 +404,23 @@ public class OrderService implements IOrderService {
     }
 
     /**
-     * Gửi email thông báo đơn hàng mới cho tất cả shop owners
+     * Gửi email thông báo đơn hàng mới cho tất cả shop owners, staff và admin
      */
     private void sendNewOrderNotificationToShopOwners(OrderModel order) {
         try {
-            // Lấy danh sách tất cả shop owners
+            // Lấy danh sách tất cả shop owners, staff và admin
             List<UserModel> shopOwners = userRepository.findByRole(UserRole.SHOP_OWNER);
+            List<UserModel> staffUsers = userRepository.findByRole(UserRole.STAFF);
+            List<UserModel> adminUsers = userRepository.findByRole(UserRole.ADMIN);
 
-            if (shopOwners.isEmpty()) {
-                return; // Không có shop owner nào thì không cần gửi email
+            // Gộp tất cả users cần nhận thông báo
+            List<UserModel> allRecipients = new java.util.ArrayList<>();
+            allRecipients.addAll(shopOwners);
+            allRecipients.addAll(staffUsers);
+            allRecipients.addAll(adminUsers);
+
+            if (allRecipients.isEmpty()) {
+                return; // Không có ai cần nhận thông báo
             }
 
             UserModel customer = order.getUser();
@@ -521,13 +529,13 @@ public class OrderService implements IOrderService {
                             : "",
                     itemsHtml.toString());
 
-            // Gửi email và tạo notification cho tất cả shop owners
-            for (UserModel shopOwner : shopOwners) {
-                if (shopOwner.getEmail() != null && !shopOwner.getEmail().isEmpty()) {
+            // Gửi email và tạo notification cho tất cả shop owners, staff và admin
+            for (UserModel recipient : allRecipients) {
+                if (recipient.getEmail() != null && !recipient.getEmail().isEmpty()) {
                     try {
-                        emailService.sendHtmlEmail(shopOwner.getEmail(), subject, body);
+                        emailService.sendHtmlEmail(recipient.getEmail(), subject, body);
                     } catch (Exception e) {
-                        System.err.println("Failed to send new order notification to shop owner " + shopOwner.getEmail()
+                        System.err.println("Failed to send new order notification to " + recipient.getEmail()
                                 + ": " + e.getMessage());
                     }
                 }
@@ -541,14 +549,14 @@ public class OrderService implements IOrderService {
                             customerFullName,
                             formattedAmount);
                     notificationDbService.createNotification(
-                            shopOwner.getId(),
+                            recipient.getId(),
                             notificationTitle,
                             notificationMessage,
                             NotificationType.NEW_ORDER,
                             order.getId(),
                             order.getOrderCode());
                 } catch (Exception e) {
-                    System.err.println("Failed to create notification for shop owner " + shopOwner.getId() + ": "
+                    System.err.println("Failed to create notification for user " + recipient.getId() + ": "
                             + e.getMessage());
                 }
             }
@@ -675,15 +683,23 @@ public class OrderService implements IOrderService {
     }
 
     /**
-     * Gửi notification cho shop owners về việc đơn hàng bị hủy
+     * Gửi notification cho shop owners, staff và admin về việc đơn hàng bị hủy
      */
     private void sendOrderCancellationNotificationToShopOwners(OrderModel order, Long cancelledByUserId,
             String reason) {
         try {
-            // Lấy danh sách tất cả shop owners
+            // Lấy danh sách tất cả shop owners, staff và admin
             List<UserModel> shopOwners = userRepository.findByRole(UserRole.SHOP_OWNER);
+            List<UserModel> staffUsers = userRepository.findByRole(UserRole.STAFF);
+            List<UserModel> adminUsers = userRepository.findByRole(UserRole.ADMIN);
 
-            if (shopOwners.isEmpty()) {
+            // Gộp tất cả users cần nhận thông báo
+            List<UserModel> allRecipients = new java.util.ArrayList<>();
+            allRecipients.addAll(shopOwners);
+            allRecipients.addAll(staffUsers);
+            allRecipients.addAll(adminUsers);
+
+            if (allRecipients.isEmpty()) {
                 return;
             }
 
@@ -710,8 +726,8 @@ public class OrderService implements IOrderService {
 
             String formattedAmount = String.format("%,.0f", order.getTotal());
 
-            // Tạo notification cho mỗi shop owner
-            for (UserModel shopOwner : shopOwners) {
+            // Tạo notification cho mỗi shop owner, staff và admin
+            for (UserModel recipient : allRecipients) {
                 try {
                     String notificationTitle = "Đơn hàng bị hủy - #" + order.getOrderCode();
                     String notificationMessage = String.format(
@@ -722,14 +738,14 @@ public class OrderService implements IOrderService {
                             cancelledByUserName,
                             reason != null ? reason : "Không có lý do");
                     notificationDbService.createNotification(
-                            shopOwner.getId(),
+                            recipient.getId(),
                             notificationTitle,
                             notificationMessage,
                             NotificationType.ORDER_CANCELLED,
                             order.getId(),
                             order.getOrderCode());
                 } catch (Exception e) {
-                    System.err.println("Failed to create cancellation notification for shop owner " + shopOwner.getId()
+                    System.err.println("Failed to create cancellation notification for user " + recipient.getId()
                             + ": " + e.getMessage());
                 }
             }
@@ -1005,10 +1021,12 @@ public class OrderService implements IOrderService {
 
     /**
      * Apply voucher to order với kiểm tra usage limit thread-safe
-     * @param order Order cần apply voucher
-     * @param voucherCode Mã voucher
+     * 
+     * @param order          Order cần apply voucher
+     * @param voucherCode    Mã voucher
      * @param discountAmount Số tiền giảm giá
-     * @return VoucherModel nếu apply thành công, null nếu voucher đã hết lượt sử dụng
+     * @return VoucherModel nếu apply thành công, null nếu voucher đã hết lượt sử
+     *         dụng
      */
     @Transactional
     private synchronized VoucherModel applyVoucherToOrder(OrderModel order, String voucherCode, Double discountAmount) {
@@ -1017,9 +1035,9 @@ public class OrderService implements IOrderService {
         if (voucherOpt.isEmpty()) {
             return null;
         }
-        
+
         VoucherModel voucher = voucherOpt.get();
-        
+
         // Kiểm tra lại usage limit trước khi tăng usedCount
         if (voucher.getUsageLimit() != null && voucher.getUsedCount() != null) {
             if (voucher.getUsedCount() >= voucher.getUsageLimit()) {
@@ -1027,16 +1045,16 @@ public class OrderService implements IOrderService {
                 return null;
             }
         }
-        
+
         // Apply voucher vào order
         order.setVoucherCode(voucherCode);
         order.setDiscountAmount(discountAmount);
         order.setVoucher(voucher);
-        
+
         // Tăng usedCount
         voucher.setUsedCount((voucher.getUsedCount() == null ? 0 : voucher.getUsedCount()) + 1);
         voucherRepo.save(voucher);
-        
+
         return voucher;
     }
 }
